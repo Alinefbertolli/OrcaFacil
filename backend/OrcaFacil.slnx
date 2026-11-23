@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="OrcaFacil.Domain/OrcaFacil.Domain.csproj" />
+    <Project Path="OrcaFacil.Application/OrcaFacil.Application.csproj" />
+    <Project Path="OrcaFacil.Infrastructure/OrcaFacil.Infrastructure.csproj" />
+    <Project Path="OrcaFacil.API/OrcaFacil.API.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="OrcaFacil.Tests/OrcaFacil.Tests.csproj" />
+  </Folder>
+</Solution>

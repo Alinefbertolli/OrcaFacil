@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Segredos e configuração local
+.env
+appsettings.*.local.json
+
+# Arquivos enviados pelos usuários e logs
+storage/
+logs/
+
+# Arquivos de idioma do OCR (baixados à parte, ~15 MB)
+tessdata/
+
+# IDEs / SO
+.idea/
+.vscode/
+.DS_Store
