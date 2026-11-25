@@ -543,6 +543,87 @@ Em `Tests/Infrastructure/ExtratorTextoTests.cs`, os testes **criam arquivos reai
 
 ---
 
+## 4F. Fase 7: o motor de orçamentação
+
+Esta é a fase em que o OrçaFácil passa a fazer o que promete: transformar a lista do cliente em **um orçamento com preço**.
+
+### 4F.1 O fluxo completo
+
+```
+Lista REVISADA (Fase 6)
+      │  POST /orcamentos/gerar  { modo: Unico | Comparativo }
+      ▼
+Para cada linha da lista:
+   Único        → usa o produto escolhido na revisão
+   Comparativo  → busca os produtos EQUIVALENTES e escolhe um para cada opção
+      ▼
+Orçamento com 1 opção (Único) ou até 3 opções (Econômica, Custo-benefício, Marcas reconhecidas)
+      ▼
+Itens "sem preço"? → a loja informa o preço à mão
+      ▼
+Cliente escolhe a opção → "AguardandoAprovacao" → Aprovado/Reprovado → Finalizado
+```
+
+### 4F.2 Preço de VENDA x preço de CUSTO
+
+O cliente final (a mãe, o pedreiro) paga o **preço de venda** da loja, por isso criamos o campo `Produto.PrecoVenda`. O preço do fornecedor é o **custo**: só a loja vê, para calcular a margem. Misturar os dois seria um erro de negócio grave: o cliente poderia ver quanto a loja paga.
+
+### 4F.3 O que são "produtos equivalentes"
+
+São produtos que podem **substituir** uns aos outros: um caderno de 10 matérias sem marca, um da Foroni e um da Tilibra. O sistema descobre isso de dois jeitos (decisão sua: "vamos usar os dois"):
+1. **Grupo de equivalência** (`GrupoEquivalencia`): a loja escreve o mesmo grupo nos três produtos, por exemplo "caderno 10 materias". É o jeito mais confiável, porque quem decide é a loja.
+2. **Sem grupo:** o sistema procura produtos da **mesma categoria** com o **nome parecido**, usando a mesma técnica de trigramas da Fase 6 (similaridade de 0,5 ou mais).
+
+O grupo é guardado **normalizado**: "  Caderno  10 Matérias " vira "caderno 10 materias". Assim, diferenças de acento, maiúsculas ou espaços não atrapalham.
+
+### 4F.4 As regras de cada opção
+
+As regras ficam num lugar só, a classe `SeletorDeOpcoes`, escritas como **funções puras**: a mesma entrada sempre dá a mesma saída, sem banco de dados. Isso torna o código fácil de ler e de testar.
+
+| Opção | Regra |
+|---|---|
+| Econômica | o de **menor preço** |
+| Custo-benefício | o mais barato entre as marcas de **nível 3 ou mais** (marca boa, preço justo) |
+| Marcas reconhecidas | a marca de **maior nível**; em caso de empate, a mais barata |
+
+Detalhes que fazem diferença:
+- Produto sem preço de venda **nunca** é escolhido.
+- Produto sem marca conta como nível 1.
+- Se o cliente pediu uma marca ("caderno Tilibra"), todas as opções usam essa marca.
+- Se duas opções saem iguais (mesmos produtos), o sistema mostra só uma e avisa.
+
+### 4F.5 A regra mais importante: nunca inventar preço
+
+Se um item não tem produto associado, ou o produto não tem preço de venda, ele entra como **"sem preço"**:
+- o `precoUnitario` aparece `null`, não 0;
+- há uma observação explicando o que fazer;
+- o total da opção fica marcado como incompleto.
+
+O domínio **bloqueia** o envio ao cliente (`AguardandoAprovacao`) enquanto houver item sem preço na opção escolhida. Você viu isso no teste: primeiro veio o 422 e, depois de informar o preço, o 200.
+
+💡 Por que a regra mora no **domínio** (classe `Orcamento`) e não no controller? Porque assim ela vale para **qualquer** caminho que mude o status: a API, uma tela futura, um teste. Uma regra de negócio importante fica perto dos dados que ela protege.
+
+### 4F.6 Migration incremental: mudar o banco sem perder dados
+
+Na Fase 2.1 apagamos o banco e recriamos a migration, porque não havia dados. Agora havia dados de teste. Por isso criamos uma migration **nova** (`Fase7MotorOrcamento`), que só altera o que mudou. Duas lições:
+1. **Renomear coluna:** a troca de `PrecoReferencia` para `PrecoVenda` precisava ser um `RenameColumn`. Um "apagar + criar" perderia os preços cadastrados. Desta vez o EF acertou sozinho, mas **sempre se revisa** a migration antes do `database update`.
+2. **Coluna nova obrigatória em tabela com dados:** as empresas que já existiam precisam de um valor na coluna nova `ModoOrcamentoPadrao`. O EF sugeriu `""` (vazio), que quebraria a leitura do enum. Ajustamos à mão para `"Comparativo"`.
+
+### 4F.7 Um detalhe de banco: "só uma opção selecionada"
+
+O banco tem um **índice único** que garante no máximo uma opção selecionada por orçamento. Para **trocar** a escolha, o sistema primeiro grava "nenhuma selecionada" e só depois marca a nova. Se fizesse as duas coisas de uma vez, o banco poderia ver por um instante **duas** opções marcadas e recusar a gravação.
+
+### 4F.8 Lições da sessão
+
+| Problema | Causa | Lição |
+|---|---|---|
+| Erro CS0411 no build | `OverridePropertyName` escrito antes da regra (FluentValidation) | A ordem das chamadas encadeadas importa |
+| O mesmo erro de novo | O arquivo corrigido não tinha chegado ao computador | Sempre conferir se a correção foi aplicada |
+| 401 "token expired" | O Swagger guardou um token de dois dias antes | Cadeado fechado ≠ login válido: Logout + Authorize |
+| 400 "Categoria não encontrada" | Foi colado o Id da empresa | O começo de um GUID v7 revela a data de criação |
+
+---
+
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)
 
 1. **Não aceite código que você não entende.** Pergunte "por que isso?" e "o que essa linha faz?". Entender é o seu objetivo, e o código é consequência.

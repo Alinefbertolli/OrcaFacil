@@ -10,17 +10,16 @@
 - Os comandos `dotnet` são executados dentro de `OrcaFacil\backend` (não na raiz).
 - Atenção: o disco C: ficou sem espaço na primeira restauração do NuGet. Se der erro "Espaço insuficiente", liberar espaço antes.
 
-## ▶️ ONDE PARAMOS (18/11/2026): retomar por aqui
+## ▶️ ONDE PARAMOS (25/11/2026): retomar por aqui
 
-**23/11/2026: Fase 7 EM ANDAMENTO.** Código escrito e enviado para o computador (24 arquivos: domínio, `ServicoOrcamentos`, `SeletorDeOpcoes`, `CatalogoEquivalentes`, `OrcamentosController`, `EmpresaController`, testes). **Falta:** (a) a usuária rodar build + testes; (b) gerar a migration `Fase7MotorOrcamento`; (c) Claude REVISAR a migration antes do `database update`: trocar DropColumn/AddColumn de PrecoReferencia por `RenameColumn` (preserva os preços de teste), trocar o check constraint para CK_Produto_PrecoVenda e colocar `defaultValue: "Comparativo"` nas colunas novas de enum `Empresas.ModoOrcamentoPadrao` e `Orcamentos.Modo` (senão viram "" e quebram a leitura); (d) validar no Swagger; (e) seção 4F do guia.
+**Fase 7 concluída e validada (25/11/2026).** Falta só a usuária fazer o **commit "Fase 7" + push** (instruções dadas na sessão; conferir com `git log` no computador se já foi feito).
 
-Fase 6 concluída e validada. **Fase 7, motor de orçamentação**, redesenhada conforme a seção "Visão do produto" abaixo. **Plano aprovado pela usuária em 18/11/2026** (começar na próxima sessão):
-1. `Produto.PrecoVenda` substitui o "preço de referência" (migration incremental, sem apagar o banco: há dados de teste).
-2. Configuração da empresa: modo padrão de orçamento (Único ou Comparativo).
-3. **Equivalência de produtos: os DOIS métodos** (decisão da usuária): campo opcional `Produto.GrupoEquivalencia` (ex.: "caderno 10 matérias"; produtos com o mesmo grupo são substitutos) com prioridade; sem grupo, busca automática por similaridade (pg_trgm) dentro da mesma categoria.
-4. Gerar orçamento a partir de uma ListaImportada revisada: modo Único (produto associado na revisão) ou Comparativo (escolher quais opções: Econômica/MenorPreco, CustoBeneficio, MarcasReconhecidas); marca pedida pelo cliente é respeitada; opções idênticas → mostrar uma só, com aviso.
-5. Comparação lado a lado (totais, diferenças em R$ e %); selecionar a opção; status do orçamento.
-6. Itens sem produto ou sem preço de venda → "sem preço", para preencher à mão.
+**Próximo passo: Fase 8, estoque** (disponibilidade no orçamento). Ideias já combinadas na visão do produto: mostrar no orçamento se há estoque; criar o registro de Estoque ao cadastrar produto (pendente desde a Fase 5). Antes de começar, propor o plano à usuária (formato didático).
+
+- **GitHub:** https://github.com/Alinefbertolli/OrcaFacil (público). Commit + push ao fim de cada etapa validada. VS Code em inglês e logado no GitHub; a usuária usa o painel Source Control (Commit → Sync Changes).
+- **Senha do Postgres** foi trocada em 23/11 por uma aleatória (está no `.env` e nos user-secrets). Nunca pedir.
+- **Dados de teste no banco:** marcas Tilibra (5) e Foroni (3); produtos CAD10-1/2/3 (12/20/30, grupo "caderno 10 materias"); lista `01a20b03-79ec-7be1-9733-47d5e3aba86a` (Revisada); ORC-2026-000001 (Comparativo, Econômica selecionada, AguardandoAprovacao) e ORC-2026-000002 (Unico).
+- **Lições operacionais para Claude:** (1) nunca chamar `device_commit_files` em paralelo com o Bash que prepara o arquivo; (2) **usar um caminho de staging NOVO a cada envio** (ex.: `/mnt/user-data/outputs/envio-AAAAMMDD-x/...`): reenviar pelo mesmo stagedPath gravou a versão antiga; (3) depois de enviar, conferir no computador com `grep` via `device_bash`; (4) o Windows PowerShell 5.1 não tem `RandomNumberGenerator.Fill` (usar `Create().GetBytes()`); (5) Swagger guarda o token no navegador (EnablePersistAuthorization): 401 com "token expired" = fazer Logout + Authorize de novo.
 
 ## 🎯 Visão do produto (decidida em 18/11/2026; orienta todas as fases seguintes)
 
@@ -52,7 +51,8 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 4 | Autenticação (JWT + refresh token), cadastro de empresa + usuário, permissões | ✅ **Concluída (17/11/2026)**: testes OK; no Swagger: registrar 201, /me 200, sem token 401, login 200/401, rate limit 429 |
 | 5 | Produtos, categorias, marcas, fornecedores, clientes | ✅ **Concluída (18/11/2026)**: 149 testes OK; roteiro completo no Swagger (categoria, marca, produto, 409 de código repetido, fornecedor, vínculo com preço, histórico, busca, cliente com CPF inválido → 400) |
 | 6 | Importação de listas (PDF, imagem/OCR, Excel, Word, texto, WhatsApp) e revisão | ✅ **Concluída (18/11/2026)**: 195 testes OK; no Swagger: WhatsApp (3 itens, caderno sugerido do catálogo), correção, sugestões, confirmação (depois 422 ao editar), Excel (2 itens), imagem com OCR (3 itens, confiança do Tesseract 88%) |
-| 7 | Cotação, motor de orçamentação (3 estratégias) e comparação | ⏭️ Próxima |
+| 7 | Motor de orçamentação (preço de venda, modo Único/Comparativo, 3 opções com produtos equivalentes) e comparação | ✅ **Concluída (25/11/2026)**: 228 testes OK; migration incremental `Fase7MotorOrcamento` (rename sem perda de dados); no Swagger: comparativo 24/40/60, comparação 0/16/36 (0/66,7/150 %), seleção, 422 com item sem preço, preço manual 31,50, envio 200, modo Único 201 |
+| 8 | Estoque e disponibilidade no orçamento | ⏭️ Próxima |
 | 8 | Estoque (endpoints) | Pendente |
 | 9 | Geração de PDF (QuestPDF) | Pendente |
 | 10–11 | Frontend React + TS + MUI e integração | Pendente |
@@ -136,6 +136,15 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
 
+## ✅ Fase 7: o que foi implementado (23–25/11/2026)
+
+- **Domínio:** `Produto.PrecoVenda` (substitui PrecoReferencia/OrigemPrecoReferencia) e `Produto.GrupoEquivalencia` (normalizado: minúsculas, sem acento, espaços simples; máx. 100); `Empresa.ModoOrcamentoPadrao`; enum `ModoOrcamento` (Unico, Comparativo); `TipoOpcaoOrcamento.Unica`; `OrigemPreco.PrecoVenda`; `Orcamento.Modo`, `LimparSelecao()`, `InformarPrecoItem()`; envio para aprovação bloqueado se a opção selecionada tiver itens sem preço; `ItemOrcamento.SemPreco(...)` (`PrecoPendente`, `Observacao` máx. 500, `ItemListaImportadaId`, `Ordem`); `Duplicar` preserva tudo isso.
+- **Application/Orcamentos:** `SeletorDeOpcoes` (regras puras: Econômica = menor preço; Custo-benefício = mais barato entre marcas de nível ≥ 3, senão o mais barato; Marcas reconhecidas = maior nível, empate → mais barato; produto sem marca = nível 1; nunca escolhe produto sem preço; filtro da marca pedida sem acento/maiúsculas, por nome da marca ou do produto); `ServicoOrcamentos` (gerar, listar, obter, comparar, informar preço, selecionar em 2 gravações por causa do índice único de opção selecionada, alterar status; opções idênticas removidas com aviso; opção única já selecionada; aviso de unidade diferente; validade padrão 7 dias). `Empresas/ServicoConfiguracoesEmpresa`.
+- **Infrastructure:** `CatalogoEquivalentes` (grupo → mesmo grupo; sem grupo → mesma categoria com `similarity(Nome) >= 0.5`; só ativos), `RepositorioOrcamentos` (Include + ThenInclude + AsSplitQuery). Índices `(EmpresaId, GrupoEquivalencia)` e `(OpcaoOrcamentoId, Ordem)`.
+- **API:** `OrcamentosController` (`POST /orcamentos/gerar`, `GET /orcamentos`, `GET /orcamentos/{id}`, `GET /{id}/comparacao`, `PUT /{id}/opcoes/{opcaoId}/itens/{itemId}/preco`, `POST /{id}/opcoes/{opcaoId}/selecionar`, `POST /{id}/status`); `EmpresaController` (`GET /empresa/configuracoes`, `PUT` só Administrador).
+- **Migration** `20261123221525_Fase7MotorOrcamento`: o EF gerou RenameColumn sozinho; Claude ajustou `defaultValue: "Comparativo"` nas colunas novas de enum.
+- **Ainda não feito (previsto):** trocar o produto de um item do orçamento manualmente; duplicar pela API; `GET /clientes/{id}/orcamentos`; PDF/WhatsApp (Fase 9); renovação automática do token no frontend (Fase 10).
+
 ## ✅ Fase 6: o que foi implementado (18/11/2026)
 
 - **Domínio:** `ItemListaImportada.SugerirProduto(produtoId, novaConfianca)`; `Corrigir` agora aceita `produtoId = null` (desfaz a associação).
@@ -190,6 +199,8 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 
 ## Histórico de sessões
 
+- **25/11/2026 — Sessão 8:** validação da Fase 7 concluída no Swagger (D7–D12 e E13 conforme o esperado). 401 por token expirado guardado no navegador → Logout + Authorize. Documentação atualizada (guia 4F).
+- **23/11/2026 — Sessão 7:** Fase 7 escrita. Erros: CS0411 (`OverridePropertyName` antes da regra) e um envio de arquivo desatualizado (commit em paralelo; ver lições). Migration revisada e aplicada. Senha do Postgres trocada por uma aleatória. Git instalado, **projeto publicado no GitHub**. Validação no Swagger até o passo C6 (400 por colar o empresaId no lugar da categoria).
 - **18/11/2026 — Sessão 6 (cont.):** Fase 6 escrita e **validada**. O computador desligou por erro no meio da sessão: arquivos de código conferidos (110, íntegros); o `appsettings.Development.json` tinha voltado a uma versão anterior (OneDrive) e foi restaurado; `bin`/`obj` limpos antes do build. 400 no upload do Excel = campo opcional `clienteId` enviado com o GUID de exemplo do Swagger (validação do cliente acontece antes de ler o arquivo).
 - **18/11/2026 — Sessão 6:** validação da Fase 5 concluída (149 testes). Ajustes durante a validação: login por e-mail e senha no Authorize do Swagger, EnablePersistAuthorization, token de 120 min só em Development, ordem do log de requisições corrigida. Erros encontrados pela usuária e explicados com o log: token copiado incompleto (IDX14121), GUID de exemplo do Swagger (404), token expirado (IDX10223).
 - **17/11/2026 — Sessão 5:** Fase 5 escrita (cadastros de categorias, marcas, produtos com fornecedores e histórico de preços, fornecedores, clientes).

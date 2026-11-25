@@ -201,7 +201,8 @@ Exclusões: `Cascade` apenas em composições (itens de lista, opções/itens de
 | Fornecedores | CRUD em `/fornecedores` · `GET /fornecedores/{id}/produtos` · `GET /fornecedores/{id}/historico-precos` · `PUT /fornecedores/{id}/avaliacao` |
 | Clientes | CRUD em `/clientes` · `GET /clientes/{id}/orcamentos` |
 | Importação | `POST /importacoes/arquivo` (multipart) · `POST /importacoes/texto` · `GET /importacoes/{id}` · `PUT /importacoes/{id}/itens/{itemId}` · `POST /importacoes/{id}/itens` · `DELETE /importacoes/{id}/itens/{itemId}` · `POST /importacoes/{id}/confirmar-revisao` |
-| Orçamentação | `POST /orcamentos/gerar` (a partir de lista revisada) · `GET /orcamentos/{id}/comparacao` · `POST /orcamentos/{id}/opcoes/{opcaoId}/selecionar` |
+| Orçamentação ✅ | `POST /orcamentos/gerar` (lista revisada; `modo` Unico/Comparativo; `opcoes`) · `GET /orcamentos/{id}/comparacao` · `POST /orcamentos/{id}/opcoes/{opcaoId}/selecionar` · `PUT /orcamentos/{id}/opcoes/{opcaoId}/itens/{itemId}/preco` · `POST /orcamentos/{id}/status` |
+| Empresa ✅ | `GET /empresa/configuracoes` · `PUT /empresa/configuracoes` (Admin: modo padrão de orçamento) |
 | Orçamentos | `GET /orcamentos?status=&clienteId=&de=&ate=` · `GET /orcamentos/{id}` · `POST` · `PUT /{id}` · `DELETE /{id}` · `POST /{id}/duplicar` · `PATCH /{id}/status` · `PUT /{id}/opcoes/{opcaoId}/itens/{itemId}` · `GET /{id}/pdf` |
 | Estoque | `GET /estoque?abaixoDoMinimo=` · `GET /estoque/{produtoId}` · `POST /estoque/entradas` · `POST /estoque/saidas` · `POST /estoque/ajustes` · `GET /estoque/{produtoId}/movimentacoes` · `POST /estoque/entradas/orcamento/{orcamentoId}` |
 | Relatórios | `GET /relatorios/{orcamentos,produtos-mais-pesquisados,produtos-mais-comprados,evolucao-precos,fornecedores-mais-utilizados,economia,movimentacoes-estoque,compras}?de=&ate=&produtoId=&fornecedorId=&clienteId=` |
@@ -308,10 +309,7 @@ Hash PBKDF2 · JWT com chave de no mínimo 256 bits lida de variável de ambient
 | 4 | Autenticação e usuários | ✅ |
 | 5 | Produtos, categorias, marcas, fornecedores, clientes | ✅ |
 | 6 | Importação de listas (texto, WhatsApp, Excel, Word, PDF, imagem/OCR) e revisão | ✅ |
-| 4 | Autenticação e usuários | |
-| 5 | Produtos, categorias, marcas, fornecedores, clientes | |
-| 6 | Importação de listas (extratores, OCR, interpretador, revisão) | |
-| 7 | Cotação, motor de orçamentação e comparação | |
+| 7 | Motor de orçamentação (preço de venda, Único/Comparativo, produtos equivalentes) e comparação | ✅ |
 | 8 | Estoque | |
 | 9 | PDF | |
 | 10–11 | Frontend e integração | |
