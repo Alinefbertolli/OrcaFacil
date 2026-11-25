@@ -2,7 +2,9 @@ using FluentValidation;
 using Microsoft.Extensions.Logging;
 using OrcaFacil.Application.Abstracoes;
 using OrcaFacil.Application.Comum;
+using OrcaFacil.Application.Estoques;
 using OrcaFacil.Application.Importacao;
+using OrcaFacil.Domain.Comum;
 using OrcaFacil.Domain.Entidades;
 using OrcaFacil.Domain.Enums;
 
@@ -27,10 +29,12 @@ public sealed record InformarPrecoRequisicao(decimal PrecoUnitario);
 public sealed record AlterarStatusRequisicao(StatusOrcamento Status);
 
 /// <param name="PrecoUnitario">Null quando o item está "sem preço".</param>
+/// <param name="Disponibilidade">Situação ATUAL no estoque (calculada na hora da consulta). Null = item sem produto.</param>
+/// <param name="SaldoEmEstoque">Saldo atual do produto. Null = sem controle de estoque ou sem produto.</param>
 public sealed record ItemOrcamentoResposta(
     Guid Id, int Ordem, Guid? ItemListaImportadaId, Guid? ProdutoId, string Descricao, string? Marca,
     decimal Quantidade, string UnidadeMedida, decimal? PrecoUnitario, decimal? PrecoTotal, OrigemPreco? OrigemPreco,
-    bool SemPreco, string? Observacao);
+    bool SemPreco, string? Observacao, DisponibilidadeEstoque? Disponibilidade, decimal? SaldoEmEstoque);
 
 /// <param name="ItensSemPreco">Maior que zero = o ValorTotal ainda está incompleto.</param>
 public sealed record OpcaoOrcamentoResposta(
@@ -59,7 +63,7 @@ public sealed record LinhaComparacao(int Ordem, IReadOnlyList<CelulaComparacao> 
 
 public sealed record CelulaComparacao(
     TipoOpcaoOrcamento Tipo, Guid ItemId, string Descricao, string? Marca, decimal Quantidade, string UnidadeMedida,
-    decimal? PrecoUnitario, decimal? PrecoTotal, bool SemPreco);
+    decimal? PrecoUnitario, decimal? PrecoTotal, bool SemPreco, DisponibilidadeEstoque? Disponibilidade);
 
 // ---------------------------------------------------------------- Validadores
 
@@ -106,6 +110,7 @@ public sealed class ServicoOrcamentos(
     IRepositorio<Cliente> clientes,
     IRepositorio<Empresa> empresas,
     ICatalogoEquivalentes catalogo,
+    IRepositorioEstoques estoques,
     IGeradorNumeroOrcamento geradorNumero,
     IEmpresaAtual empresaAtual,
     IUsuarioAtual usuarioAtual,
@@ -197,6 +202,7 @@ public sealed class ServicoOrcamentos(
     {
         var orcamento = await ObterCompletoAsync(id, ct);
         var opcoes = OrdenarOpcoes(orcamento.Opcoes);
+        var saldos = await SaldosDoOrcamentoAsync(orcamento, ct);
         var menorTotal = opcoes.Count == 0 ? 0m : opcoes.Min(o => o.ValorTotal);
 
         var colunas = opcoes.Select(o =>
@@ -215,7 +221,7 @@ public sealed class ServicoOrcamentos(
                 x.Tipo, x.Item.Id, x.Item.Descricao, x.Item.Marca, x.Item.Quantidade, x.Item.UnidadeMedida,
                 x.Item.PrecoPendente ? null : x.Item.PrecoUnitario,
                 x.Item.PrecoPendente ? null : x.Item.PrecoTotal,
-                x.Item.PrecoPendente)).ToList()))
+                x.Item.PrecoPendente, AvaliarItem(x.Item, saldos))).ToList()))
             .ToList();
 
         return new ComparacaoResposta(orcamento.Id, orcamento.Numero, colunas, linhas);
@@ -253,7 +259,15 @@ public sealed class ServicoOrcamentos(
     public async Task<OrcamentoResposta> AlterarStatusAsync(Guid id, AlterarStatusRequisicao requisicao, CancellationToken ct = default)
     {
         var orcamento = await ObterCompletoAsync(id, ct);
+
+        // Fase 8 (decisão da usuária): a venda finalizada dá baixa no estoque.
+        // Só "Aprovado" pode virar "Finalizado"; nos outros casos o AlterarStatus abaixo já recusa.
+        // Tudo é gravado junto no MESMO SaveChanges: ou finaliza E baixa, ou nada acontece.
+        if (requisicao.Status == StatusOrcamento.Finalizado && orcamento.Status == StatusOrcamento.Aprovado)
+            await BaixarEstoqueDaVendaAsync(orcamento, ct);
+
         orcamento.AlterarStatus(requisicao.Status);
+
         await unidadeDeTrabalho.SalvarAlteracoesAsync(ct);
         return await MontarRespostaAsync(orcamento, [], ct);
     }
@@ -288,9 +302,15 @@ public sealed class ServicoOrcamentos(
 
         // Comparativo: produtos equivalentes (grupo ou similaridade), respeitando a marca pedida.
         var equivalentes = await catalogo.BuscarEquivalentesAsync(produtoId, ct);
-        var candidatos = SeletorDeOpcoes.FiltrarPorMarca(equivalentes, linha.Marca, out var marcaEncontrada);
-        var observacao = marcaEncontrada ? null
-            : $"Marca pedida ({linha.Marca}) não encontrada no catálogo: usamos marcas equivalentes.";
+        var daMarca = SeletorDeOpcoes.FiltrarPorMarca(equivalentes, linha.Marca, out var marcaEncontrada);
+        var candidatos = SeletorDeOpcoes.FiltrarPorEstoque(daMarca, linha.Quantidade, out var algumComEstoque);
+
+        var observacoes = new List<string>();
+        if (!marcaEncontrada)
+            observacoes.Add($"Marca pedida ({linha.Marca}) não encontrada no catálogo: usamos marcas equivalentes.");
+        if (!algumComEstoque)
+            observacoes.Add("Nenhum produto equivalente tem estoque suficiente: confira o prazo de reposição.");
+        var observacao = observacoes.Count == 0 ? null : string.Join(" ", observacoes);
 
         foreach (var tipo in tipos)
             escolhas[tipo] = SeletorDeOpcoes.Escolher(tipo, candidatos);
@@ -358,6 +378,56 @@ public sealed class ServicoOrcamentos(
 
     // ---------------------------------------------------------------- auxiliares
 
+    /// <summary>
+    /// Baixa no estoque os produtos da opção vendida. Produtos sem controle de estoque são ignorados.
+    /// Se faltar saldo de qualquer produto, NADA é baixado e a finalização é recusada com a lista do que falta.
+    /// </summary>
+    private async Task BaixarEstoqueDaVendaAsync(Orcamento orcamento, CancellationToken ct)
+    {
+        var vendida = orcamento.OpcaoSelecionada
+            ?? throw new DomainException("O orçamento não tem opção selecionada.");
+
+        var porProduto = vendida.Itens
+            .Where(i => i.ProdutoId.HasValue && !i.PrecoPendente)
+            .GroupBy(i => i.ProdutoId!.Value)
+            .Select(g => (ProdutoId: g.Key, Descricao: g.First().Descricao, Quantidade: g.Sum(i => i.Quantidade)))
+            .ToList();
+        if (porProduto.Count == 0) return;
+
+        var estoquesDosProdutos = (await estoques.ListarPorProdutosAsync(porProduto.Select(p => p.ProdutoId), ct))
+            .ToDictionary(e => e.ProdutoId);
+
+        // 1) Confere TUDO antes de baixar qualquer coisa.
+        var faltas = porProduto
+            .Where(p => estoquesDosProdutos.TryGetValue(p.ProdutoId, out var e) && e.QuantidadeDisponivel < p.Quantidade)
+            .Select(p => $"{p.Descricao} (pedido {p.Quantidade:0.###}, em estoque {estoquesDosProdutos[p.ProdutoId].QuantidadeDisponivel:0.###})")
+            .ToList();
+        if (faltas.Count > 0)
+            throw new DomainException(
+                $"Estoque insuficiente para finalizar a venda: {string.Join("; ", faltas)}. " +
+                "Registre a entrada dos produtos (ou ajuste o estoque) e tente de novo.");
+
+        // 2) Baixa: cada saída fica no histórico ligada a este orçamento.
+        foreach (var (produtoId, _, quantidade) in porProduto)
+        {
+            if (estoquesDosProdutos.TryGetValue(produtoId, out var estoque))
+                estoque.RegistrarSaida(quantidade, IdUsuarioLogado, $"Venda do orçamento {orcamento.Numero}", orcamento.Id);
+        }
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, decimal>> SaldosDoOrcamentoAsync(Orcamento orcamento, CancellationToken ct)
+    {
+        var ids = orcamento.Opcoes.SelectMany(o => o.Itens)
+            .Where(i => i.ProdutoId.HasValue).Select(i => i.ProdutoId!.Value).Distinct().ToList();
+        return ids.Count == 0 ? new Dictionary<Guid, decimal>() : await estoques.ObterSaldosAsync(ids, ct);
+    }
+
+    private static DisponibilidadeEstoque? AvaliarItem(ItemOrcamento item, IReadOnlyDictionary<Guid, decimal> saldos)
+    {
+        if (item.ProdutoId is not Guid produtoId) return null;
+        return Disponibilidade.Avaliar(saldos.TryGetValue(produtoId, out var saldo) ? saldo : null, item.Quantidade);
+    }
+
     private async Task<ModoOrcamento> ModoPadraoDaEmpresaAsync(CancellationToken ct)
     {
         var empresaId = empresaAtual.EmpresaId ?? throw new NaoAutorizadoException("Faça login para continuar.");
@@ -383,11 +453,24 @@ public sealed class ServicoOrcamentos(
     {
         var cliente = orcamento.ClienteId is Guid cid ? await clientes.ObterPorIdAsync(cid, ct) : null;
         var opcoes = OrdenarOpcoes(orcamento.Opcoes);
+        var saldos = await SaldosDoOrcamentoAsync(orcamento, ct);
 
         var avisos = new List<string>(avisosDaGeracao);
         foreach (var opcao in opcoes.Where(o => o.ItensSemPreco > 0))
             avisos.Add($"Opção \"{SeletorDeOpcoes.NomeDaOpcao(opcao.Tipo)}\": {opcao.ItensSemPreco} item(ns) sem preço. " +
                        "O total está incompleto até você informar os preços.");
+
+        // O estoque muda depois que o orçamento é gerado: a disponibilidade é sempre a de AGORA.
+        if (orcamento.Status != StatusOrcamento.Finalizado)
+        {
+            foreach (var opcao in opcoes)
+            {
+                var semEstoque = opcao.Itens.Count(i => AvaliarItem(i, saldos)
+                    is DisponibilidadeEstoque.Parcial or DisponibilidadeEstoque.Indisponivel);
+                if (semEstoque > 0)
+                    avisos.Add($"Opção \"{SeletorDeOpcoes.NomeDaOpcao(opcao.Tipo)}\": {semEstoque} item(ns) sem estoque suficiente no momento.");
+            }
+        }
 
         var respostasOpcoes = opcoes.Select(o => new OpcaoOrcamentoResposta(o.Id, o.Tipo, SeletorDeOpcoes.NomeDaOpcao(o.Tipo),
             o.ValorTotal, o.ItensSemPreco, o.Selecionada,
@@ -396,7 +479,8 @@ public sealed class ServicoOrcamentos(
                 i.PrecoPendente ? null : i.PrecoUnitario,
                 i.PrecoPendente ? null : i.PrecoTotal,
                 i.PrecoPendente ? null : i.OrigemPreco,
-                i.PrecoPendente, i.Observacao)).ToList())).ToList();
+                i.PrecoPendente, i.Observacao, AvaliarItem(i, saldos),
+                i.ProdutoId is Guid pid && saldos.TryGetValue(pid, out var saldo) ? saldo : null)).ToList())).ToList();
 
         return new OrcamentoResposta(orcamento.Id, orcamento.Numero, orcamento.Modo, orcamento.Status, orcamento.ClienteId,
             cliente?.Nome, orcamento.ListaImportadaId, orcamento.ValidadeAte, orcamento.CriadoEm, orcamento.CalcularEconomia(),

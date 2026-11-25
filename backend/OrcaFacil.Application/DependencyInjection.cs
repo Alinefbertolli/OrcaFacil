@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OrcaFacil.Application.Autenticacao;
 using OrcaFacil.Application.Cadastros;
 using OrcaFacil.Application.Empresas;
+using OrcaFacil.Application.Estoques;
 using OrcaFacil.Application.Importacao;
 using OrcaFacil.Application.Orcamentos;
 using OrcaFacil.Application.Usuarios;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ServicoImportacao>();
         services.AddScoped<ServicoOrcamentos>();
         services.AddScoped<ServicoConfiguracoesEmpresa>();
+        services.AddScoped<ServicoEstoque>();
 
         return services;
     }

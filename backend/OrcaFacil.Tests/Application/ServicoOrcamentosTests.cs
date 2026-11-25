@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using FluentValidation;
 using Microsoft.Extensions.Logging.Abstractions;
 using OrcaFacil.Application.Abstracoes;
+using OrcaFacil.Application.Estoques;
 using OrcaFacil.Application.Importacao;
 using OrcaFacil.Application.Orcamentos;
 using OrcaFacil.Domain.Comum;
@@ -67,19 +68,37 @@ public class ServicoOrcamentosTests
     private readonly FakeRepositorio<Orcamento> _orcamentos = new();
     private readonly FakeRepositorio<Empresa> _empresas = new();
     private readonly FakeUnitOfWork _unidadeDeTrabalho = new();
+    private readonly FakeEstoques _estoques = new();
+    private readonly List<ProdutoCandidato> _catalogo;
     private readonly Empresa _empresa = new("Papelaria Exemplo Ltda", "11.222.333/0001-81", SegmentoEmpresa.Papelaria);
     private readonly ServicoOrcamentos _servico;
 
     public ServicoOrcamentosTests()
     {
         _empresas.Adicionar(_empresa);
-        var catalogo = new FakeCatalogo([_cadernoGenerico, _cadernoForoni, _cadernoTilibra, _lapis, _pijamaSemPreco]);
+        _catalogo = [_cadernoGenerico, _cadernoForoni, _cadernoTilibra, _lapis, _pijamaSemPreco];
+        var catalogo = new FakeCatalogo(_catalogo);
 
         _servico = new ServicoOrcamentos(_orcamentos, new FakeOrcamentosCompletos(_orcamentos), new FakeListasComItens(_listas),
-            new FakeRepositorio<Cliente>(), _empresas, catalogo, new FakeGeradorNumero(), new EmpresaAtualFixa(_empresa.Id),
+            new FakeRepositorio<Cliente>(), _empresas, catalogo, _estoques, new FakeGeradorNumero(), new EmpresaAtualFixa(_empresa.Id),
             new FakeUsuarioAtual(Guid.NewGuid()), _unidadeDeTrabalho,
             new RelogioFixo(new DateTimeOffset(2026, 11, 23, 15, 0, 0, TimeSpan.Zero)),
             new GerarOrcamentoValidador(), new InformarPrecoValidador(), NullLogger<ServicoOrcamentos>.Instance);
+    }
+
+    /// <summary>Dá controle de estoque ao produto (no "catálogo" e no "estoque") com o saldo informado.</summary>
+    private void DefinirEstoque(ProdutoCandidato produto, decimal saldo)
+    {
+        var indice = _catalogo.FindIndex(p => p.Id == produto.Id);
+        _catalogo[indice] = produto with { SaldoEstoque = saldo };
+        _estoques.ComSaldo(produto.Id, saldo);
+    }
+
+    /// <summary>Leva o orçamento até "Aprovado" (a opção já precisa estar selecionada).</summary>
+    private async Task AprovarAsync(Guid orcamentoId)
+    {
+        await _servico.AlterarStatusAsync(orcamentoId, new AlterarStatusRequisicao(StatusOrcamento.AguardandoAprovacao));
+        await _servico.AlterarStatusAsync(orcamentoId, new AlterarStatusRequisicao(StatusOrcamento.Aprovado));
     }
 
     /// <summary>Cria uma lista já revisada. Cada item: (descrição, quantidade, marca pedida, produto associado).</summary>
@@ -264,5 +283,89 @@ public class ServicoOrcamentosTests
 
         await FluentActions.Awaiting(() => Gerar(lista, ModoOrcamento.Unico, [TipoOpcaoOrcamento.MenorPreco]))
             .Should().ThrowAsync<ValidationException>();
+    }
+
+    // ------------------------------------------------------------ Fase 8: estoque
+
+    [Fact]
+    public async Task Comparativo_prefere_produtos_com_estoque()
+    {
+        // O caderno mais barato (sem marca) acabou; o Foroni e o Tilibra têm saldo.
+        DefinirEstoque(_cadernoGenerico, 0);
+        DefinirEstoque(_cadernoForoni, 50);
+        DefinirEstoque(_cadernoTilibra, 10);
+        var lista = ListaRevisada(("caderno", 2, null, _cadernoForoni));
+
+        var orcamento = await Gerar(lista, ModoOrcamento.Comparativo);
+
+        var economica = orcamento.Opcoes.First(o => o.Tipo == TipoOpcaoOrcamento.MenorPreco);
+        economica.Itens[0].ProdutoId.Should().Be(_cadernoForoni.Id, "o mais barato está sem estoque");
+        economica.Itens[0].Disponibilidade.Should().Be(DisponibilidadeEstoque.Disponivel);
+        economica.Itens[0].SaldoEmEstoque.Should().Be(50);
+    }
+
+    [Fact]
+    public async Task Produto_sem_controle_de_estoque_continua_podendo_ser_escolhido()
+    {
+        DefinirEstoque(_cadernoForoni, 0); // só o Foroni é controlado (e está zerado)
+        var lista = ListaRevisada(("caderno", 1, null, _cadernoForoni));
+
+        var orcamento = await Gerar(lista, ModoOrcamento.Comparativo);
+
+        var economica = orcamento.Opcoes.First(o => o.Tipo == TipoOpcaoOrcamento.MenorPreco);
+        economica.Itens[0].ProdutoId.Should().Be(_cadernoGenerico.Id);
+        economica.Itens[0].Disponibilidade.Should().Be(DisponibilidadeEstoque.NaoControlado);
+    }
+
+    [Fact]
+    public async Task Sem_nenhum_equivalente_com_estoque_usa_a_regra_normal_e_avisa()
+    {
+        DefinirEstoque(_cadernoGenerico, 0);
+        DefinirEstoque(_cadernoForoni, 1);
+        DefinirEstoque(_cadernoTilibra, 0);
+        var lista = ListaRevisada(("caderno", 5, null, _cadernoForoni));
+
+        var orcamento = await Gerar(lista, ModoOrcamento.Comparativo);
+
+        var economica = orcamento.Opcoes.First(o => o.Tipo == TipoOpcaoOrcamento.MenorPreco);
+        economica.Itens[0].ProdutoId.Should().Be(_cadernoGenerico.Id);
+        economica.Itens[0].Observacao.Should().Contain("estoque suficiente");
+        orcamento.Avisos.Should().Contain(a => a.Contains("sem estoque suficiente"));
+    }
+
+    [Fact]
+    public async Task Finalizar_a_venda_da_baixa_no_estoque_ligada_ao_orcamento()
+    {
+        DefinirEstoque(_cadernoForoni, 50);
+        var lista = ListaRevisada(("caderno", 2, null, _cadernoForoni), ("pijama luna", 1, null, null));
+        var gerado = await Gerar(lista, ModoOrcamento.Unico);
+        var opcao = gerado.Opcoes[0];
+        await _servico.InformarPrecoAsync(gerado.Id, opcao.Id, opcao.Itens[1].Id, new InformarPrecoRequisicao(89.90m));
+        await AprovarAsync(gerado.Id);
+
+        var finalizado = await _servico.AlterarStatusAsync(gerado.Id, new AlterarStatusRequisicao(StatusOrcamento.Finalizado));
+
+        finalizado.Status.Should().Be(StatusOrcamento.Finalizado);
+        var estoque = _estoques.Itens.Single(e => e.ProdutoId == _cadernoForoni.Id);
+        estoque.QuantidadeDisponivel.Should().Be(48);
+        var saida = estoque.Movimentacoes.Last();
+        saida.Tipo.Should().Be(TipoMovimentacaoEstoque.Saida);
+        saida.OrcamentoId.Should().Be(gerado.Id);
+        saida.Motivo.Should().Contain(gerado.Numero);
+    }
+
+    [Fact]
+    public async Task Finalizar_com_estoque_insuficiente_e_recusado_e_nada_e_baixado()
+    {
+        var lista = ListaRevisada(("caderno", 2, null, _cadernoForoni));
+        var gerado = await Gerar(lista, ModoOrcamento.Unico);
+        await AprovarAsync(gerado.Id);
+        DefinirEstoque(_cadernoForoni, 1); // o estoque baixou depois da aprovação
+
+        await FluentActions.Awaiting(() =>
+                _servico.AlterarStatusAsync(gerado.Id, new AlterarStatusRequisicao(StatusOrcamento.Finalizado)))
+            .Should().ThrowAsync<DomainException>().WithMessage("Estoque insuficiente*Caderno 10 matérias Foroni*");
+
+        _estoques.Itens.Single().QuantidadeDisponivel.Should().Be(1);
     }
 }

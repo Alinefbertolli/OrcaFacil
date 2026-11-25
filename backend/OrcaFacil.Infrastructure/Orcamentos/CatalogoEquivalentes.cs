@@ -59,5 +59,6 @@ public sealed class CatalogoEquivalentes(OrcaFacilDbContext contexto, IEmpresaAt
         consulta.AsNoTracking().Select(p => new ProdutoCandidato(
             p.Id, p.Codigo, p.Nome, p.UnidadeMedida, p.PrecoVenda, p.Ativo,
             p.Marca != null ? p.Marca.Nome : null,
-            p.Marca != null ? p.Marca.NivelReconhecimento : (int?)null));
+            p.Marca != null ? p.Marca.NivelReconhecimento : (int?)null,
+            p.Estoque != null ? p.Estoque.QuantidadeDisponivel : (decimal?)null)); // null = sem controle de estoque
 }

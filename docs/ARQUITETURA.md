@@ -204,7 +204,7 @@ Exclusões: `Cascade` apenas em composições (itens de lista, opções/itens de
 | Orçamentação ✅ | `POST /orcamentos/gerar` (lista revisada; `modo` Unico/Comparativo; `opcoes`) · `GET /orcamentos/{id}/comparacao` · `POST /orcamentos/{id}/opcoes/{opcaoId}/selecionar` · `PUT /orcamentos/{id}/opcoes/{opcaoId}/itens/{itemId}/preco` · `POST /orcamentos/{id}/status` |
 | Empresa ✅ | `GET /empresa/configuracoes` · `PUT /empresa/configuracoes` (Admin: modo padrão de orçamento) |
 | Orçamentos | `GET /orcamentos?status=&clienteId=&de=&ate=` · `GET /orcamentos/{id}` · `POST` · `PUT /{id}` · `DELETE /{id}` · `POST /{id}/duplicar` · `PATCH /{id}/status` · `PUT /{id}/opcoes/{opcaoId}/itens/{itemId}` · `GET /{id}/pdf` |
-| Estoque | `GET /estoque?abaixoDoMinimo=` · `GET /estoque/{produtoId}` · `POST /estoque/entradas` · `POST /estoque/saidas` · `POST /estoque/ajustes` · `GET /estoque/{produtoId}/movimentacoes` · `POST /estoque/entradas/orcamento/{orcamentoId}` |
+| Estoque ✅ | `GET /estoque?abaixoDoMinimo=&busca=` · `GET /estoque/{produtoId}` · `POST /estoque/{produtoId}/entradas` · `POST /estoque/{produtoId}/saidas` · `POST /estoque/{produtoId}/ajustes` (Gerente) · `PUT /estoque/{produtoId}/configuracao` (Gerente) · `GET /estoque/{produtoId}/movimentacoes` · baixa automática ao finalizar o orçamento |
 | Relatórios | `GET /relatorios/{orcamentos,produtos-mais-pesquisados,produtos-mais-comprados,evolucao-precos,fornecedores-mais-utilizados,economia,movimentacoes-estoque,compras}?de=&ate=&produtoId=&fornecedorId=&clienteId=` |
 | Integrações | `GET /integracoes/provedores` (status de cada provedor) · `POST /cotacoes/pesquisar` |
 | Sistema | `GET /health` · `/swagger` |
@@ -310,7 +310,7 @@ Hash PBKDF2 · JWT com chave de no mínimo 256 bits lida de variável de ambient
 | 5 | Produtos, categorias, marcas, fornecedores, clientes | ✅ |
 | 6 | Importação de listas (texto, WhatsApp, Excel, Word, PDF, imagem/OCR) e revisão | ✅ |
 | 7 | Motor de orçamentação (preço de venda, Único/Comparativo, produtos equivalentes) e comparação | ✅ |
-| 8 | Estoque | |
+| 8 | Estoque e disponibilidade no orçamento | ✅ |
 | 9 | PDF | |
 | 10–11 | Frontend e integração | |
 | 12 | Testes de integração (Testcontainers) e correções | |

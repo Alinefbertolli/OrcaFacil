@@ -624,6 +624,49 @@ O banco tem um **índice único** que garante no máximo uma opção selecionada
 
 ---
 
+## 4G. Fase 8: estoque
+
+### 4G.1 Saldo com histórico (nunca "apagar e escrever por cima")
+
+O saldo de um produto só muda por três caminhos, e **cada um deixa um registro** (`MovimentacaoEstoque`) com o saldo anterior, o novo saldo, quem fez e o motivo:
+
+| Operação | Exemplo | Regra |
+|---|---|---|
+| Entrada | compra, devolução | quantidade maior que zero |
+| Saída | perda, uso interno, **venda finalizada** | nunca deixa o saldo negativo |
+| Ajuste (inventário) | "contei 48 na prateleira" | motivo obrigatório; só Gerente |
+
+O histórico não pode ser apagado. É assim que a loja descobre para onde foi cada unidade, e é o mesmo princípio de um extrato bancário.
+
+### 4G.2 Produto "não controlado"
+
+Nem toda loja controla estoque de tudo. A loja de pijamas por catálogo, por exemplo, pode vender sob encomenda. Por isso, um produto só passa a ter controle de estoque na **primeira entrada ou ajuste**. Até lá, ele aparece como `NaoControlado` e **não bloqueia nada**: o sistema não finge saber um saldo que não conhece.
+
+### 4G.3 Estoque no orçamento (as suas duas decisões)
+
+1. **Preferir quem tem estoque.** Antes de aplicar as regras de cada opção (4F.4), o motor separa os produtos que **conseguem atender** a quantidade: os que têm saldo suficiente ou que não são controlados. No teste, o caderno sem marca estava zerado, então a Econômica escolheu o Foroni. Se nenhum produto atende, o motor usa a regra normal e escreve uma observação no item.
+2. **Baixa ao finalizar.** Quando o orçamento vira **Finalizado**, o sistema registra a saída de cada produto vendido, com o número do orçamento no motivo.
+
+A disponibilidade mostrada no orçamento é calculada **na hora da consulta**, não guardada. O estoque muda o tempo todo, e um "disponível" gravado ontem pode ser mentira hoje.
+
+### 4G.4 Transação: "ou tudo, ou nada"
+
+Na finalização, o sistema faz assim:
+1. **Confere todos** os itens primeiro. Se faltar saldo de qualquer um, recusa tudo (422) com a lista do que falta.
+2. Só então registra as saídas e muda o status, e grava tudo num **único** `SaveChanges`.
+
+Isso é uma **transação**: o banco aplica o conjunto inteiro ou nada. Nunca acontece de "baixou o caderno, mas não a caneta" ou de o orçamento ficar finalizado sem a baixa.
+
+E se dois vendedores finalizarem ao mesmo tempo vendas do último caderno? A coluna `xmin` (concorrência otimista, Fase 2) faz a segunda gravação falhar com 409: "o registro foi alterado por outra pessoa".
+
+### 4G.5 Testes pelo navegador do Claude
+
+Nesta fase, você pediu que eu testasse sozinho. Você ligou a API e fez o login no **navegador embutido do app do Claude**, e eu chamei a API por ali. Duas lições:
+- **Cada navegador tem os próprios logins**, como uma janela anônima. O login feito no Chrome não vale no navegador do Claude.
+- Testar pela API (sem clicar na tela) é rápido e repetível. Na **Fase 12**, isso vira **testes de integração automáticos**, que rodam com um comando.
+
+---
+
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)
 
 1. **Não aceite código que você não entende.** Pergunte "por que isso?" e "o que essa linha faz?". Entender é o seu objetivo, e o código é consequência.

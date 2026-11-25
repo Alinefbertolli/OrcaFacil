@@ -4,8 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using OrcaFacil.Application.Abstracoes;
 using OrcaFacil.Application.Importacao;
 using OrcaFacil.Application.Orcamentos;
+using OrcaFacil.Application.Estoques;
 using OrcaFacil.Infrastructure.Importacao;
 using OrcaFacil.Infrastructure.Orcamentos;
+using OrcaFacil.Infrastructure.Estoques;
 using OrcaFacil.Infrastructure.Email;
 using OrcaFacil.Infrastructure.Seguranca;
 using OrcaFacil.Infrastructure.Persistencia;
@@ -55,6 +57,9 @@ public static class DependencyInjection
         // Motor de orçamentação
         services.AddScoped<IRepositorioOrcamentos, RepositorioOrcamentos>();
         services.AddScoped<ICatalogoEquivalentes, CatalogoEquivalentes>();
+
+        // Estoque
+        services.AddScoped<IRepositorioEstoques, RepositorioEstoques>();
 
         return services;
     }

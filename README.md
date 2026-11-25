@@ -2,7 +2,7 @@
 
 Sistema inteligente de gestão e automação de orçamentos, oferecido como **SaaS multiempresa para varejistas de qualquer segmento** (papelarias, lojas de materiais, informática, utilidades...). Importa listas de produtos (PDF, imagem, Excel, Word, texto, WhatsApp), exige a revisão do usuário, cota preços em fontes rastreáveis e gera até três opções de orçamento (melhor custo-benefício, marcas reconhecidas, menor preço). Depois compara as opções, gera a proposta em PDF e integra a compra ao estoque.
 
-> **Estado atual:** Fases 1 a 7 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR) e motor de orçamentação (orçamento único ou comparativo com 3 opções). Próxima: Fase 8 (estoque).
+> **Estado atual:** Fases 1 a 7 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR) motor de orçamentação (orçamento único ou comparativo com 3 opções) e estoque (disponibilidade no orçamento e baixa ao finalizar a venda). Próxima: Fase 9 (PDF e texto para WhatsApp).
 > Plano completo e modelo de dados: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 > Estado do desenvolvimento e como continuar: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
 
@@ -147,6 +147,9 @@ A lista completa planejada está em [`docs/ARQUITETURA.md` §5](docs/ARQUITETURA
 | ✅ logado | `POST /api/v1/orcamentos/gerar` · `GET /api/v1/orcamentos` · `GET /api/v1/orcamentos/{id}` · `GET /api/v1/orcamentos/{id}/comparacao` |
 | ✅ logado | `PUT /api/v1/orcamentos/{id}/opcoes/{opcaoId}/itens/{itemId}/preco` · `POST /api/v1/orcamentos/{id}/opcoes/{opcaoId}/selecionar` · `POST /api/v1/orcamentos/{id}/status` |
 | ✅ logado / Administrador | `GET /api/v1/empresa/configuracoes` · `PUT /api/v1/empresa/configuracoes` (Administrador) |
+
+| ✅ logado | `GET /api/v1/estoque` (`abaixoDoMinimo`, `busca`) · `GET /api/v1/estoque/{produtoId}` · `POST .../entradas` · `POST .../saidas` · `GET .../movimentacoes` |
+| ✅ Gerente | `POST /api/v1/estoque/{produtoId}/ajustes` · `PUT /api/v1/estoque/{produtoId}/configuracao` |
 
 > ⚠️ O envio de e-mail (recuperação de senha) ainda é **simulado**: o link e o token aparecem no log da API.
 | ✅ | `GET /swagger` |

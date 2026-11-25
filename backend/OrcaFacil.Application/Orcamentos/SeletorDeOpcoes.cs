@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using OrcaFacil.Application.Estoques;
 using OrcaFacil.Domain.Enums;
 
 namespace OrcaFacil.Application.Orcamentos;
@@ -79,6 +80,22 @@ public static class SeletorDeOpcoes
 
         marcaEncontrada = false;
         return candidatos;
+    }
+
+    /// <summary>
+    /// Fase 8 (decisão da usuária: "preferir quem tem estoque"): fica só com os produtos que conseguem
+    /// atender a quantidade pedida (com saldo suficiente ou sem controle de estoque).
+    /// Se nenhum produto com preço atender, devolve todos e avisa (algumAtende = false).
+    /// </summary>
+    public static IReadOnlyList<ProdutoCandidato> FiltrarPorEstoque(IReadOnlyList<ProdutoCandidato> candidatos,
+        decimal quantidade, out bool algumAtende)
+    {
+        var atendem = candidatos
+            .Where(c => c.PrecoVenda is not null && Disponibilidade.Atende(c.SaldoEstoque, quantidade))
+            .ToList();
+
+        algumAtende = atendem.Count > 0 || candidatos.All(c => c.PrecoVenda is null);
+        return atendem.Count > 0 ? atendem : candidatos;
     }
 
     private static int Nivel(ProdutoCandidato c) => c.NivelMarca ?? NivelSemMarca;

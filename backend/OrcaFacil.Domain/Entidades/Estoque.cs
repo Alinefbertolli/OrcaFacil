@@ -26,6 +26,8 @@ public class Estoque : EntidadeDaEmpresa
     public decimal EstoqueMinimo { get; private set; }
     public string? Localizacao { get; set; }
 
+    public const int TamanhoMaximoLocalizacao = 100;
+
     /// <summary>Token de concorrência (xmin no PostgreSQL) evita duas saídas simultâneas furarem o saldo.</summary>
     public uint Versao { get; private set; }
 
@@ -43,7 +45,8 @@ public class Estoque : EntidadeDaEmpresa
             usuarioId, motivo, orcamentoId);
     }
 
-    public MovimentacaoEstoque RegistrarSaida(decimal quantidade, Guid usuarioId, string? motivo)
+    /// <param name="orcamentoId">Preenchido quando a saída é a venda de um orçamento finalizado (rastreabilidade).</param>
+    public MovimentacaoEstoque RegistrarSaida(decimal quantidade, Guid usuarioId, string? motivo, Guid? orcamentoId = null)
     {
         Guarda.Positivo(quantidade, "Quantidade");
         if (quantidade > QuantidadeDisponivel)
@@ -51,7 +54,7 @@ public class Estoque : EntidadeDaEmpresa
                 $"Saldo insuficiente. Disponível: {QuantidadeDisponivel:0.###}, solicitado: {quantidade:0.###}.");
 
         return Movimentar(TipoMovimentacaoEstoque.Saida, quantidade, QuantidadeDisponivel - quantidade,
-            usuarioId, motivo, orcamentoId: null);
+            usuarioId, motivo, orcamentoId);
     }
 
     /// <summary>Inventário: define o saldo real contado. O motivo é obrigatório para auditoria.</summary>

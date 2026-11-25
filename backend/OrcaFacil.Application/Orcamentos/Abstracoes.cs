@@ -8,6 +8,7 @@ namespace OrcaFacil.Application.Orcamentos;
 /// </summary>
 /// <param name="PrecoVenda">Null = a loja não cadastrou o preço (o item fica "sem preço").</param>
 /// <param name="NivelMarca">1 a 5 (cadastro da marca). Null = produto sem marca.</param>
+/// <param name="SaldoEstoque">Saldo atual no estoque. Null = a loja não controla o estoque deste produto.</param>
 public sealed record ProdutoCandidato(
     Guid Id,
     string Codigo,
@@ -16,7 +17,8 @@ public sealed record ProdutoCandidato(
     decimal? PrecoVenda,
     bool Ativo,
     string? MarcaNome,
-    int? NivelMarca);
+    int? NivelMarca,
+    decimal? SaldoEstoque = null);
 
 /// <summary>
 /// Consulta o catálogo para o motor de orçamentação. Implementado na Infrastructure

@@ -12,9 +12,11 @@
 
 ## ▶️ ONDE PARAMOS (25/11/2026): retomar por aqui
 
-**Fase 7 concluída e validada (25/11/2026).** Falta só a usuária fazer o **commit "Fase 7" + push** (instruções dadas na sessão; conferir com `git log` no computador se já foi feito).
+**Fases 7 e 8 concluídas e validadas.** Falta só a usuária fazer o **commit "Fase 8" + push** (Source Control → Commit & Sync; conferir com `git log` no computador).
 
-**Próximo passo: Fase 8, estoque** (disponibilidade no orçamento). Ideias já combinadas na visão do produto: mostrar no orçamento se há estoque; criar o registro de Estoque ao cadastrar produto (pendente desde a Fase 5). Antes de começar, propor o plano à usuária (formato didático).
+**Próximo passo: Fase 9, orçamento em PDF + texto pronto para o WhatsApp** (visão do produto, item 6). Lembrar: QuestPDF é gratuito só até US$ 1 mi de receita anual (avisar a usuária antes de adotar; alternativa sem licença comercial: PdfSharp/MigraDoc ou gerar HTML). Propor o plano antes de codar.
+
+**Como testar no Swagger agora (desde 25/11):** a usuária pediu que Claude teste sozinho. Claude usa o **navegador embutido do app** (`mcp__remote-devices__Claude_Browser__*`, site `https://localhost:7080` já liberado). Ela precisa: build/test/run no Windows; abrir o painel (Ctrl+Shift+B no app desktop) e fazer o Authorize LÁ (não no Chrome dela). Claude pega o token em `window.ui.authSelectors.authorized()` e chama a API com `fetch` via `javascript_tool`. Nunca digitar a senha dela.
 
 - **GitHub:** https://github.com/Alinefbertolli/OrcaFacil (público). Commit + push ao fim de cada etapa validada. VS Code em inglês e logado no GitHub; a usuária usa o painel Source Control (Commit → Sync Changes).
 - **Senha do Postgres** foi trocada em 23/11 por uma aleatória (está no `.env` e nos user-secrets). Nunca pedir.
@@ -52,7 +54,8 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 5 | Produtos, categorias, marcas, fornecedores, clientes | ✅ **Concluída (18/11/2026)**: 149 testes OK; roteiro completo no Swagger (categoria, marca, produto, 409 de código repetido, fornecedor, vínculo com preço, histórico, busca, cliente com CPF inválido → 400) |
 | 6 | Importação de listas (PDF, imagem/OCR, Excel, Word, texto, WhatsApp) e revisão | ✅ **Concluída (18/11/2026)**: 195 testes OK; no Swagger: WhatsApp (3 itens, caderno sugerido do catálogo), correção, sugestões, confirmação (depois 422 ao editar), Excel (2 itens), imagem com OCR (3 itens, confiança do Tesseract 88%) |
 | 7 | Motor de orçamentação (preço de venda, modo Único/Comparativo, 3 opções com produtos equivalentes) e comparação | ✅ **Concluída (25/11/2026)**: 228 testes OK; migration incremental `Fase7MotorOrcamento` (rename sem perda de dados); no Swagger: comparativo 24/40/60, comparação 0/16/36 (0/66,7/150 %), seleção, 422 com item sem preço, preço manual 31,50, envio 200, modo Único 201 |
-| 8 | Estoque e disponibilidade no orçamento | ⏭️ Próxima |
+| 8 | Estoque e disponibilidade no orçamento | ✅ **Concluída (25/11/2026)**: 246 testes OK; sem migration; testada por Claude no navegador embutido: entradas/saídas/ajuste/mínimo/histórico, 422 sem controle e saldo insuficiente, comparativo preferindo quem tem estoque (Econômica = Foroni), finalização bloqueada sem saldo e baixa de 2 ligada ao ORC-2026-000004 |
+| 9 | PDF do orçamento e texto para WhatsApp | ⏭️ Próxima |
 | 8 | Estoque (endpoints) | Pendente |
 | 9 | Geração de PDF (QuestPDF) | Pendente |
 | 10–11 | Frontend React + TS + MUI e integração | Pendente |
@@ -136,6 +139,16 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
 
+## ✅ Fase 8: o que foi implementado (25/11/2026)
+
+- **Decisões da usuária:** no Comparativo, preferir produtos que atendem a quantidade (saldo suficiente OU sem controle de estoque); se nenhum atende, regra normal + observação "Nenhum produto equivalente tem estoque suficiente". Baixa automática ao **finalizar** (Aprovado → Finalizado), no mesmo SaveChanges; se faltar saldo de qualquer item, nada é baixado e a finalização é recusada (422) com a lista do que falta.
+- **Produto "não controlado"** = sem registro de Estoque; o controle começa na 1ª entrada, ajuste ou configuração (substitui a ideia de criar o Estoque ao cadastrar o produto).
+- **Domínio:** `Estoque.RegistrarSaida(..., orcamentoId)`; `TamanhoMaximoLocalizacao`.
+- **Application/Estoques:** `DisponibilidadeEstoque` (NaoControlado, Disponivel, Parcial, Indisponivel) + `Disponibilidade.Avaliar/Atende`; `IRepositorioEstoques`; `ServicoEstoque` (obter, listar com abaixoDoMinimo/busca, entrada, saída, ajuste com motivo obrigatório, configurar mínimo/localização, movimentações). Orçamentos: `ProdutoCandidato.SaldoEstoque`, `SeletorDeOpcoes.FiltrarPorEstoque`, itens e células da comparação com `Disponibilidade` e `SaldoEmEstoque` calculados NA HORA da consulta, aviso "sem estoque suficiente no momento" (exceto em Finalizado).
+- **Infrastructure:** `RepositorioEstoques`; `CatalogoEquivalentes` projeta o saldo (`p.Estoque`).
+- **API:** `EstoqueController` em `/api/v1/estoque` (ajustes e configuração exigem Gerente).
+- Sem migration (as tabelas Estoques/MovimentacoesEstoque existem desde a Fase 2).
+
 ## ✅ Fase 7: o que foi implementado (23–25/11/2026)
 
 - **Domínio:** `Produto.PrecoVenda` (substitui PrecoReferencia/OrigemPrecoReferencia) e `Produto.GrupoEquivalencia` (normalizado: minúsculas, sem acento, espaços simples; máx. 100); `Empresa.ModoOrcamentoPadrao`; enum `ModoOrcamento` (Unico, Comparativo); `TipoOpcaoOrcamento.Unica`; `OrigemPreco.PrecoVenda`; `Orcamento.Modo`, `LimparSelecao()`, `InformarPrecoItem()`; envio para aprovação bloqueado se a opção selecionada tiver itens sem preço; `ItemOrcamento.SemPreco(...)` (`PrecoPendente`, `Observacao` máx. 500, `ItemListaImportadaId`, `Ordem`); `Duplicar` preserva tudo isso.
@@ -199,6 +212,7 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 
 ## Histórico de sessões
 
+- **25/11/2026 — Sessão 8 (cont.):** Fase 8 escrita (decisões: preferir estoque; baixa ao finalizar), 246 testes OK na 1ª compilação. A pedido da usuária, **Claude testou a API sozinho pelo navegador embutido** (ela fez o login no painel). Todos os cenários conforme o esperado. Dados criados: estoques CAD10-1 = 8, CAD10-2 = 48, CAD10-3 = 10 (mínimo 20, Prateleira B2); ORC-2026-000003 (Comparativo) e ORC-2026-000004 (Unico, Finalizado).
 - **25/11/2026 — Sessão 8:** validação da Fase 7 concluída no Swagger (D7–D12 e E13 conforme o esperado). 401 por token expirado guardado no navegador → Logout + Authorize. Documentação atualizada (guia 4F).
 - **23/11/2026 — Sessão 7:** Fase 7 escrita. Erros: CS0411 (`OverridePropertyName` antes da regra) e um envio de arquivo desatualizado (commit em paralelo; ver lições). Migration revisada e aplicada. Senha do Postgres trocada por uma aleatória. Git instalado, **projeto publicado no GitHub**. Validação no Swagger até o passo C6 (400 por colar o empresaId no lugar da categoria).
 - **18/11/2026 — Sessão 6 (cont.):** Fase 6 escrita e **validada**. O computador desligou por erro no meio da sessão: arquivos de código conferidos (110, íntegros); o `appsettings.Development.json` tinha voltado a uma versão anterior (OneDrive) e foi restaurado; `bin`/`obj` limpos antes do build. 400 no upload do Excel = campo opcional `clienteId` enviado com o GUID de exemplo do Swagger (validação do cliente acontece antes de ler o arquivo).
