@@ -12,9 +12,11 @@
 
 ## ▶️ ONDE PARAMOS (25/11/2026): retomar por aqui
 
-**Fases 7, 8 e 9 concluídas e validadas.** Pendente com a usuária: (1) `dotnet build` + `dotnet test` (esperado **263**, após o ajuste final do texto do WhatsApp); (2) **commit "Fase 9" + push**.
+**Fases 7 a 10 concluídas e validadas** (a Fase 10 foi testada pela própria usuária no navegador: "amei"). Build/lint/264 testes OK em 25/11; pendente só o **commit "Fase 10" + push** (conferir com `git log`).
 
-**Próximo passo: Fase 10, frontend React + TypeScript** (Vite; telas: login, importar lista + revisão, gerar/comparar orçamento, PDF/WhatsApp, cadastros, estoque; renovação automática do token com o refresh token). Precisa de Node.js 22+ na máquina dela (verificar com `node --version`). Propor plano e escolhas (biblioteca de componentes: MUI estava no plano original) antes de codar.
+**Próximo passo: Fase 11 — telas de cadastros (produtos com preço de venda e grupo de equivalência, categorias, marcas com nível, clientes, fornecedores), estoque (entradas, saídas, inventário, abaixo do mínimo) e configurações da empresa (modo padrão, contato).** Reaproveitar `api/cliente.ts`, `Seletores.tsx`, `Paginacao.tsx`, o padrão de Snackbar de erro e o Enter para salvar. Habilitar o item "Cadastros e estoque" do menu (hoje desabilitado). Lembrar de mostrar só para Gerente/Administrador o que a API exige (ajuste de estoque, configurações).
+
+**Notebook da usuária (Dell Inspiron 3501, i7-1165G7, 8 GB, BIOS 1.43.0):** desliga sozinho (Kernel-Power 41 com BugcheckCode 0, cada vez mais frequente: 23/09, 19/10, 18/11, 25/11 ×2), com "IOMMU detectou um erro" (HAL 15) minutos antes. Recomendado: diagnóstico da Dell (F12 → Diagnostics), SupportAssist (BIOS/chipset/vídeo/Wi-Fi), limitar WSL2 (`.wslconfig` memory=3GB processors=4), relatório de bateria. Perguntar se fez e o resultado. Commit/push frequente.
 
 **Como testar no Swagger agora (desde 25/11):** a usuária pediu que Claude teste sozinho. Claude usa o **navegador embutido do app** (`mcp__remote-devices__Claude_Browser__*`, site `https://localhost:7080` já liberado). Ela precisa: build/test/run no Windows; abrir o painel (Ctrl+Shift+B no app desktop) e fazer o Authorize LÁ (não no Chrome dela). Claude pega o token em `window.ui.authSelectors.authorized()` e chama a API com `fetch` via `javascript_tool`. Nunca digitar a senha dela.
 
@@ -56,7 +58,8 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 7 | Motor de orçamentação (preço de venda, modo Único/Comparativo, 3 opções com produtos equivalentes) e comparação | ✅ **Concluída (25/11/2026)**: 228 testes OK; migration incremental `Fase7MotorOrcamento` (rename sem perda de dados); no Swagger: comparativo 24/40/60, comparação 0/16/36 (0/66,7/150 %), seleção, 422 com item sem preço, preço manual 31,50, envio 200, modo Único 201 |
 | 8 | Estoque e disponibilidade no orçamento | ✅ **Concluída (25/11/2026)**: 246 testes OK; sem migration; testada por Claude no navegador embutido: entradas/saídas/ajuste/mínimo/histórico, 422 sem controle e saldo insuficiente, comparativo preferindo quem tem estoque (Econômica = Foroni), finalização bloqueada sem saldo e baixa de 2 ligada ao ORC-2026-000004 |
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ **Concluída (25/11/2026)**: 262 testes OK (263 após ajuste); migration `Fase9ContatoEmpresa` (só colunas anuláveis); testada por Claude no navegador: contato da loja (400 com e-mail inválido), PDF 200 (83 KB, todas as opções sem escolha), WhatsApp só com a opção escolhida, 422 com item sem preço, 404, link wa.me com o telefone do cliente |
-| 10 | Frontend React + TypeScript | ⏭️ Próxima |
+| 10 | Frontend React + TypeScript (base + fluxo principal) | ✅ **Concluída (25/11/2026)**: login com renovação automática, nova lista, revisão, gerar, comparar, preços, PDF, WhatsApp, situação; testado pela usuária |
+| 11 | Telas de cadastros, estoque e configurações | ⏭️ Próxima |
 | 8 | Estoque (endpoints) | Pendente |
 | 9 | Geração de PDF (QuestPDF) | Pendente |
 | 10–11 | Frontend React + TS + MUI e integração | Pendente |
@@ -139,6 +142,17 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 7. Testes de domínio e de modelo (o filtro existe; os índices únicos são compostos com EmpresaId).
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
+
+## ✅ Fase 10: o que foi implementado (25/11/2026)
+
+- **Ferramentas (todas MIT), versões instaladas pela usuária com `npm create vite@latest frontend -- --template react-ts` (Oxlint):** Node 26.13 LTS, npm 11.20, Vite 8.3, React 19.3, TypeScript 7.0 (nativo: só roda no SO onde foi instalado; Claude não consegue rodar `tsc` na VM), Material UI 9.6 (+ icons; atenção: `DeleteOutline` não existe na v9 → `DeleteOutlineOutlined`), React Router 8.5 (declarativo, pacote `react-router`), TanStack Query 5.108.
+- **`vite.config.ts`:** proxy `/api` → `https://localhost:7080` (`secure:false`): sem CORS nem certificado. Rodar com API no terminal 1 e `npm run dev` no terminal 2 → http://localhost:5173.
+- **`src/api/cliente.ts`:** token de acesso só na memória, refresh token no localStorage; 401 → renovação **única compartilhada** (single-flight; o StrictMode chama o efeito 2x) e repete a requisição; ProblemDetails → `ErroApi` com mensagem amigável; download de arquivo. `endpoints.ts` (uma função por endpoint), `tipos.ts` (uniões de texto, sem `enum`: `erasableSyntaxOnly`).
+- **`src/auth`:** `AuthProvider` (React 19: `<Contexto value>`), `useAutenticacao`, `RotaProtegida` (guarda o destino no `state`).
+- **Telas (`src/paginas`):** Login; NovaLista (texto/WhatsApp ou arquivo + cliente); RevisaoLista (edição por linha, busca de produto com atraso de 300 ms, excluir/adicionar, confirmar, gerar com modo/opções/validade); Listas; Orcamentos (filtro por situação); OrcamentoDetalhe (cartões com diferença, abas por opção, preço de item sem preço **replicado em todas as opções**, estoque por item, PDF, diálogo do WhatsApp com copiar/abrir, botões de situação).
+- **Horário (pedido da usuária):** telas mostram data e hora (`dataHora`, fuso do navegador); o PDF mostra "Emitido em dd/MM/yyyy às HH:mm" no **horário de Brasília** (`FormatoBr.HorarioDeBrasilia`, fallback UTC-3; banco em UTC). Fuso por empresa = melhoria futura. **264 testes OK.**
+- **Lint:** contexto de autenticação em `src/auth/contexto.ts` (Fast Refresh). **Build avisa bundle de 699 KB (217 KB gzip)** → fazer *code splitting* por rota (`lazy`) na Fase 13.
+- **Ajustes pedidos/encontrados no teste da usuária:** botões que "não faziam nada" (a API recusava com 422 e o erro aparecia fora da vista) → botões desabilitados com Tooltip explicando o motivo, faixa azul com o que falta e Snackbar fixo para erros; **Enter salva** (preço, linha da revisão, adicionar item), exceto dentro da busca de produto (lá o Enter escolhe a opção); download do PDF com link anexado ao DOM e `revokeObjectURL` atrasado.
 
 ## ✅ Fase 9: o que foi implementado (25/11/2026)
 
@@ -223,6 +237,7 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 
 ## Histórico de sessões
 
+- **25/11/2026 — Sessão 8 (noite):** notebook desligou sozinho (2ª vez no dia); nada perdido (commit da Fase 9 já estava no GitHub). Diagnóstico pelos logs do Windows (ver ONDE PARAMOS). Node.js instalado via winget. Fase 10 escrita e testada pela usuária; ajustes de usabilidade a partir do feedback dela.
 - **25/11/2026 — Sessão 8 (fim):** Fase 9 escrita e validada no navegador embutido. Aviso NU1902/NU1903 (vulnerabilidade transitiva do PDFsharp) explicado e corrigido. Durante o teste, Claude achou 2 detalhes no texto do WhatsApp (\r\n do Windows e marca repetida) e corrigiu (+1 teste).
 - **25/11/2026 — Sessão 8 (cont.):** Fase 8 escrita (decisões: preferir estoque; baixa ao finalizar), 246 testes OK na 1ª compilação. A pedido da usuária, **Claude testou a API sozinho pelo navegador embutido** (ela fez o login no painel). Todos os cenários conforme o esperado. Dados criados: estoques CAD10-1 = 8, CAD10-2 = 48, CAD10-3 = 10 (mínimo 20, Prateleira B2); ORC-2026-000003 (Comparativo) e ORC-2026-000004 (Unico, Finalizado).
 - **25/11/2026 — Sessão 8:** validação da Fase 7 concluída no Swagger (D7–D12 e E13 conforme o esperado). 401 por token expirado guardado no navegador → Logout + Authorize. Documentação atualizada (guia 4F).

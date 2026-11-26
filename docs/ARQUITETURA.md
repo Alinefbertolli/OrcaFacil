@@ -312,6 +312,7 @@ Hash PBKDF2 · JWT com chave de no mínimo 256 bits lida de variável de ambient
 | 7 | Motor de orçamentação (preço de venda, Único/Comparativo, produtos equivalentes) e comparação | ✅ |
 | 8 | Estoque e disponibilidade no orçamento | ✅ |
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ |
-| 10–11 | Frontend e integração | |
+| 10 | Frontend: base, login e fluxo principal | ✅ |
+| 11 | Frontend: cadastros, estoque e configurações | |
 | 12 | Testes de integração (Testcontainers) e correções | |
 | 13 | Documentação final, Dockerfiles, CI | |

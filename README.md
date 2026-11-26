@@ -2,7 +2,7 @@
 
 Sistema inteligente de gestão e automação de orçamentos, oferecido como **SaaS multiempresa para varejistas de qualquer segmento** (papelarias, lojas de materiais, informática, utilidades...). Importa listas de produtos (PDF, imagem, Excel, Word, texto, WhatsApp), exige a revisão do usuário, cota preços em fontes rastreáveis e gera até três opções de orçamento (melhor custo-benefício, marcas reconhecidas, menor preço). Depois compara as opções, gera a proposta em PDF e integra a compra ao estoque.
 
-> **Estado atual:** Fases 1 a 7 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR) motor de orçamentação (orçamento único ou comparativo com 3 opções) estoque (disponibilidade no orçamento e baixa ao finalizar a venda) e envio ao cliente (PDF e texto pronto para o WhatsApp). Próxima: Fase 10 (frontend React).
+> **Estado atual:** Fases 1 a 7 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR) motor de orçamentação (orçamento único ou comparativo com 3 opções) estoque (disponibilidade no orçamento e baixa ao finalizar a venda) e envio ao cliente (PDF e texto pronto para o WhatsApp), e as telas do fluxo principal em React. Próxima: Fase 11 (telas de cadastros e estoque).
 > Plano completo e modelo de dados: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 > Estado do desenvolvimento e como continuar: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
 
@@ -111,6 +111,20 @@ dotnet run --project OrcaFacil.API
 - Swagger: https://localhost:7080/swagger
 - Health check (inclui o banco): https://localhost:7080/health → `Healthy`
 - Logs: no terminal e em arquivos `logs/orcafacil-AAAAMMDD.log` (pasta `backend/OrcaFacil.API/logs`)
+
+### 6. Executar o frontend (React)
+
+Requer **Node.js 22.22+** (`node --version`). Com a API rodando em outro terminal:
+
+```powershell
+cd frontend
+npm install        # só na primeira vez (ou quando o package.json mudar)
+npm run dev        # http://localhost:5173
+```
+
+- O Vite repassa as chamadas `/api` para a API em `https://localhost:7080` (proxy em `vite.config.ts`), então não é preciso configurar CORS.
+- `npm run build` confere os tipos (TypeScript) e gera a versão de produção em `frontend/dist`.
+- `npm run lint` roda o Oxlint.
 
 ## Regras de negócio já implementadas no domínio
 

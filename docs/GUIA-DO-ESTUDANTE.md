@@ -700,6 +700,53 @@ Os dois primeiros detalhes foram encontrados **testando de verdade**, e não len
 
 ---
 
+## 4I. Fase 10: as telas (frontend em React)
+
+### 4I.1 Backend x frontend
+
+Até a Fase 9, o OrçaFácil era só a **API**: um "garçom" que recebe pedidos em JSON. O **frontend** é o "salão do restaurante": as telas que o vendedor da loja usa no navegador. Ele não tem regras de negócio próprias. Ele **pergunta à API** e mostra a resposta de um jeito fácil de usar.
+
+| Backend (C#) | Frontend (TypeScript) |
+|---|---|
+| `dotnet` | `node` / `npm` |
+| NuGet | npm (pasta `node_modules`) |
+| `.csproj` | `package.json` |
+| compilador C# | TypeScript (`npm run build`) |
+| Controllers | páginas (`src/paginas`) |
+
+### 4I.2 Componentes e estado
+
+Uma tela React é feita de **componentes**: funções que devolvem "HTML" (JSX). Exemplos: `CartaoOpcao`, `LinhaItem`, `SeletorProduto`. Cada componente pode ter **estado** (`useState`): valores que, quando mudam, fazem a tela se redesenhar sozinha. Por exemplo, o preço que você está digitando.
+
+### 4I.3 Conversar com a API sem repetir código
+
+- **`api/cliente.ts`** é o único lugar que faz `fetch`: põe o token, trata os erros e **renova a sessão** quando o token vence.
+- **TanStack Query** (`useQuery` / `useMutation`) cuida de "carregando...", erro e cache em todas as telas.
+- **Renovação única:** se três requisições recebem 401 ao mesmo tempo, só uma renovação é feita e as outras esperam por ela. Sem isso, o mesmo refresh token seria usado três vezes, e a API (Fase 4) entende reuso como roubo e encerra todas as sessões.
+
+### 4I.4 Onde guardar o token
+
+- **Token de acesso:** só na memória, porque é o mais seguro. Some ao fechar a aba.
+- **Refresh token:** no `localStorage`, para a sessão sobreviver a um F5.
+
+É um equilíbrio comum em sistemas web. A alternativa mais segura, o cookie `HttpOnly`, exige mudanças na API e fica para a Fase 13.
+
+### 4I.5 Proxy do Vite
+
+O navegador bloqueia chamadas de um site (`localhost:5173`) para outro (`localhost:7080`), a não ser que o outro autorize: isso se chama **CORS**. O **proxy** do Vite faz o navegador achar que é tudo o mesmo site, então esse problema some no desenvolvimento.
+
+### 4I.6 Usabilidade: a lição do teste
+
+No primeiro teste, os botões "Baixar PDF" e "Marcar como enviado" pareciam não funcionar. A API estava certa, porque recusou enviar um orçamento com item sem preço. Mas a mensagem aparecia fora da vista. As correções foram:
+- **prevenir em vez de remediar:** desabilitar o botão e explicar o motivo;
+- **erros sempre visíveis:** um aviso fixo no rodapé;
+- **não fazer digitar duas vezes:** o preço vale para o mesmo item em todas as opções;
+- **atalhos naturais:** o **Enter** salva (sugestão sua!).
+
+Testar com alguém usando de verdade revela problemas que nenhum teste automático encontra.
+
+---
+
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)
 
 1. **Não aceite código que você não entende.** Pergunte "por que isso?" e "o que essa linha faz?". Entender é o seu objetivo, e o código é consequência.

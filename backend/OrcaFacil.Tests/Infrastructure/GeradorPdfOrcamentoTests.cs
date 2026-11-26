@@ -11,7 +11,7 @@ public class GeradorPdfOrcamentoTests
     [Fact]
     public void Pdf_tem_o_numero_os_itens_e_os_totais()
     {
-        var documento = new DocumentoOrcamento("ORC-2026-000001", new DateOnly(2026, 11, 25), new DateOnly(2026, 12, 2),
+        var documento = new DocumentoOrcamento("ORC-2026-000001", new DateTime(2026, 11, 25, 22, 15, 0), new DateOnly(2026, 12, 2),
             new LojaDocumento("Papelaria Exemplo", "11.222.333/0001-81", "(11) 3333-4444", "contato@papelaria.com",
                 "Rua A, 10 · Centro - Campinas - SP"),
             new ClienteDocumento("Maria", null),
@@ -40,6 +40,7 @@ public class GeradorPdfOrcamentoTests
             .And.Contain("OpçãoEconômica")
             .And.Contain("R$28,50")
             .And.Contain("R$64,50")
-            .And.Contain("02/12/2026");
+            .And.Contain("02/12/2026")
+            .And.Contain("25/11/2026às22:15");
     }
 }

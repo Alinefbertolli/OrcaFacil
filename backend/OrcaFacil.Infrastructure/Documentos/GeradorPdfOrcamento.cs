@@ -82,7 +82,7 @@ public sealed class GeradorPdfOrcamento : IGeradorPdfOrcamento
         titulo.AddText($"Orçamento {doc.Numero}");
 
         var datas = secao.AddParagraph(
-            $"Emitido em {FormatoBr.Data(doc.Emissao)}   ·   Válido até {FormatoBr.Data(doc.ValidadeAte)}");
+            $"Emitido em {FormatoBr.DataHora(doc.EmitidoEm)}   ·   Válido até {FormatoBr.Data(doc.ValidadeAte)}");
         datas.Format.SpaceAfter = Unit.FromCentimeter(0.2);
 
         if (doc.Cliente is not null)

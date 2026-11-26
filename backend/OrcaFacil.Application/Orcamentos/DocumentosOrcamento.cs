@@ -16,9 +16,10 @@ namespace OrcaFacil.Application.Orcamentos;
 /// são duas "aparências" diferentes deste mesmo conteúdo (assim os dois nunca discordam).
 /// Só tem o que o cliente pode ver: nada de custo, fornecedor, estoque ou observações internas.
 /// </summary>
+/// <param name="EmitidoEm">Data e hora de criação do orçamento, já no horário de Brasília.</param>
 public sealed record DocumentoOrcamento(
     string Numero,
-    DateOnly Emissao,
+    DateTime EmitidoEm,
     DateOnly ValidadeAte,
     LojaDocumento Loja,
     ClienteDocumento? Cliente,
@@ -56,6 +57,27 @@ public static class FormatoBr
     public static string Quantidade(decimal valor) => valor.ToString("0.###", PtBr);
 
     public static string Data(DateOnly data) => data.ToString("dd/MM/yyyy", PtBr);
+
+    public static string DataHora(DateTime dataHora) => dataHora.ToString("dd/MM/yyyy 'às' HH:mm", PtBr);
+
+    /// <summary>
+    /// O banco guarda as datas em UTC (horário mundial). Para o cliente, mostramos o horário de Brasília.
+    /// (Lojas em outros fusos — ex.: Manaus — poderão ter o fuso nas configurações da empresa no futuro.)
+    /// </summary>
+    public static DateTime HorarioDeBrasilia(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), FusoBrasilia.Value);
+
+    private static readonly Lazy<TimeZoneInfo> FusoBrasilia = new(() =>
+    {
+        // "America/Sao_Paulo" é o nome padrão (Linux e Windows atual); o segundo é o nome antigo do Windows.
+        foreach (var id in new[] { "America/Sao_Paulo", "E. South America Standard Time" })
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch (TimeZoneNotFoundException) { }
+        }
+        // Último recurso: UTC-3 fixo (o Brasil não tem horário de verão desde 2019).
+        return TimeZoneInfo.CreateCustomTimeZone("Brasilia", TimeSpan.FromHours(-3), "Brasília", "Brasília");
+    });
 
     public static string Cnpj(string cnpj) =>
         cnpj.Length == 14 ? $"{cnpj[..2]}.{cnpj[2..5]}.{cnpj[5..8]}/{cnpj[8..12]}-{cnpj[12..]}" : cnpj;
@@ -200,7 +222,7 @@ public sealed class ServicoDocumentosOrcamento(
 
         return new DocumentoOrcamento(
             orcamento.Numero,
-            DateOnly.FromDateTime(orcamento.CriadoEm),
+            FormatoBr.HorarioDeBrasilia(orcamento.CriadoEm),
             orcamento.ValidadeAte,
             new LojaDocumento(empresa.NomeExibicao, FormatoBr.Cnpj(empresa.Cnpj), empresa.Telefone, empresa.Email,
                 FormatoBr.Endereco(empresa.Endereco)),

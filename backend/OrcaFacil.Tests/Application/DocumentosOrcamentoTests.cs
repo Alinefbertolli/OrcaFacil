@@ -11,7 +11,7 @@ namespace OrcaFacil.Tests.Application;
 public class TextoWhatsAppTests
 {
     private static DocumentoOrcamento Documento(int quantidadeDeOpcoes) => new(
-        "ORC-2026-000001", new DateOnly(2026, 11, 25), new DateOnly(2026, 12, 2),
+        "ORC-2026-000001", new DateTime(2026, 11, 25, 10, 30, 0), new DateOnly(2026, 12, 2),
         new LojaDocumento("Papelaria Exemplo", "11.222.333/0001-81", "(11) 3333-4444", null, null),
         new ClienteDocumento("Maria", "(11) 98765-4321"),
         Enumerable.Range(1, quantidadeDeOpcoes).Select(n => new OpcaoDocumento(n == 1 ? "Econômica" : "Marcas reconhecidas",
@@ -54,6 +54,11 @@ public class TextoWhatsAppTests
         texto.Should().NotContain("*Opção").And.Contain("Para confirmar o pedido");
     }
 
+    [Fact]
+    public void Horario_do_banco_em_utc_vira_horario_de_brasilia() =>
+        FormatoBr.HorarioDeBrasilia(new DateTime(2026, 11, 26, 1, 15, 0, DateTimeKind.Utc))
+            .Should().Be(new DateTime(2026, 11, 25, 22, 15, 0), "Brasília é UTC-3: 01:15 UTC do dia 26 = 22:15 do dia 25");
+
     [Theory]
     [InlineData("(11) 98765-4321", "5511987654321")]
     [InlineData("11 3333-4444", "551133334444")]
@@ -77,6 +82,7 @@ public class TextoWhatsAppTests
         FormatoBr.Dinheiro(1234.5m).Should().Be("R$ 1.234,50");
         FormatoBr.Quantidade(2.5m).Should().Be("2,5");
         FormatoBr.Cnpj("11222333000181").Should().Be("11.222.333/0001-81");
+        FormatoBr.DataHora(new DateTime(2026, 11, 25, 9, 5, 0)).Should().Be("25/11/2026 às 09:05");
         FormatoBr.Endereco(new Endereco("Rua A", "10", null, "Centro", "Campinas", "SP", "13010000"))
             .Should().Be("Rua A, 10 · Centro - Campinas - SP · CEP 13010-000");
     }
