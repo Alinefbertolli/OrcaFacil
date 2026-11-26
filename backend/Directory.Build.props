@@ -8,7 +8,11 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- CS1591: membros públicos sem XML doc — não bloqueia a compilação -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- Avisos de documentação XML (não são bugs; o código compila e funciona igual):
+         CS1591: membro público sem nenhum comentário XML.
+         CS1573: comentário XML que documenta só ALGUNS parâmetros (comum em records, onde explicamos
+                 apenas os campos que precisam de explicação). Desligados em 26/11/2026 para o build ficar limpo
+                 e os avisos que importam (ex.: nulos, que aqui já são erro) não se perderem no meio de 100 iguais. -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 </Project>
