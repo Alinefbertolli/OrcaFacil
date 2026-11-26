@@ -745,6 +745,32 @@ No primeiro teste, os botões "Baixar PDF" e "Marcar como enviado" pareciam não
 
 Testar com alguém usando de verdade revela problemas que nenhum teste automático encontra.
 
+## 4J. Fase 11: as telas de cadastro, estoque e configurações
+
+### 4J.1 Não repetir: componentes reutilizáveis
+
+Produtos, categorias, marcas, clientes e fornecedores são telas parecidas: uma lista com busca e um formulário para criar ou editar. Em vez de escrever cinco listas, criamos **uma** (`TabelaCadastro`) que recebe "o que buscar" e "quais colunas mostrar". O mesmo vale para o formulário (`DialogoFormulario`), a confirmação ("tem certeza?") e os campos de endereço. Isso se chama **DRY** (*Don't Repeat Yourself*, "não se repita"): se um dia o visual da lista mudar, muda num lugar só.
+
+A `TabelaCadastro<T>` usa um **genérico** (`<T>`): o mesmo componente funciona para `Produto`, `Cliente` etc., e o TypeScript continua sabendo o tipo de cada linha.
+
+### 4J.2 Formulários: o Enter de graça
+
+O `DialogoFormulario` é um `<form>` de verdade, com botão `type="submit"`. Quando um formulário HTML é usado do jeito certo, o navegador já faz o **Enter salvar** sozinho, sem código extra.
+
+### 4J.3 Números no jeito brasileiro
+
+Quem digita preço no Brasil escreve `12,50`, mas o computador entende `12.50`. A função `paraNumero` troca a vírgula pelo ponto antes de converter. Detalhes assim parecem pequenos, mas são os que fazem o usuário confiar no sistema.
+
+### 4J.4 Mostrar só o que a pessoa pode fazer
+
+A API já recusa (403) quando um vendedor tenta alterar as configurações. Mesmo assim, a tela **esconde ou desabilita** o que ele não pode fazer (`usePermissoes`). As duas proteções juntas: a da API garante a **segurança**; a da tela garante a **boa experiência**. Nunca confie só na tela, porque qualquer pessoa pode chamar a API direto.
+
+### 4J.5 O aviso do lint: `useEffect` desnecessário
+
+O lint avisou: "chamar setState dentro de um efeito causa renderizações em cascata". A tela de Configurações desenhava o formulário vazio, depois um `useEffect` copiava os dados da API e a tela era desenhada de novo.
+
+A correção foi dividir em dois componentes: um **busca** os dados e o outro só aparece **quando os dados já chegaram**, nascendo preenchido (`useState(dados.telefone)`). Regra prática: **`useEffect` serve para conversar com coisas de fora do React** (timer, conexão, API do navegador), e não para copiar um estado para outro.
+
 ---
 
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)

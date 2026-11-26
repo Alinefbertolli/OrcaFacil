@@ -2,7 +2,7 @@
 
 Sistema inteligente de gestão e automação de orçamentos, oferecido como **SaaS multiempresa para varejistas de qualquer segmento** (papelarias, lojas de materiais, informática, utilidades...). Importa listas de produtos (PDF, imagem, Excel, Word, texto, WhatsApp), exige a revisão do usuário, cota preços em fontes rastreáveis e gera até três opções de orçamento (melhor custo-benefício, marcas reconhecidas, menor preço). Depois compara as opções, gera a proposta em PDF e integra a compra ao estoque.
 
-> **Estado atual:** Fases 1 a 7 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR) motor de orçamentação (orçamento único ou comparativo com 3 opções) estoque (disponibilidade no orçamento e baixa ao finalizar a venda) e envio ao cliente (PDF e texto pronto para o WhatsApp), e as telas do fluxo principal em React. Próxima: Fase 11 (telas de cadastros e estoque).
+> **Estado atual:** Fases 1 a 11 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR), motor de orçamentação (orçamento único ou comparativo com 3 opções), estoque (disponibilidade no orçamento e baixa ao finalizar a venda), envio ao cliente (PDF e texto pronto para o WhatsApp) e o frontend em React completo (fluxo de orçamento, cadastros, estoque e configurações). Próxima: Fase 11.5 (integração com ERPs).
 > Plano completo e modelo de dados: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 > Estado do desenvolvimento e como continuar: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
 
@@ -10,7 +10,7 @@ Sistema inteligente de gestão e automação de orçamentos, oferecido como **Sa
 
 - **Backend:** C# / .NET 10, ASP.NET Core Web API, EF Core 10, Swagger, JWT, FluentValidation
 - **Banco:** PostgreSQL 17 (Npgsql)
-- **Frontend (Fase 10):** React + TypeScript + Vite + MUI
+- **Frontend (Fases 10 e 11):** React + TypeScript + Vite + MUI
 - **Documentos:** PdfPig, ClosedXML, OpenXml, Tesseract (OCR), QuestPDF
 
 ## Estrutura
@@ -24,7 +24,7 @@ OrcaFacil/
 │   ├── OrcaFacil.Infrastructure/  EF Core/PostgreSQL, integrações, arquivos
 │   ├── OrcaFacil.API/             Controllers, autenticação, Swagger
 │   └── OrcaFacil.Tests/           Testes unitários e de integração
-├── frontend/                      (Fase 10)
+├── frontend/                      (Fases 10 e 11)
 ├── docs/ARQUITETURA.md
 └── docker-compose.yml
 ```

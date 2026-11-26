@@ -313,6 +313,7 @@ Hash PBKDF2 · JWT com chave de no mínimo 256 bits lida de variável de ambient
 | 8 | Estoque e disponibilidade no orçamento | ✅ |
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ |
 | 10 | Frontend: base, login e fluxo principal | ✅ |
-| 11 | Frontend: cadastros, estoque e configurações | |
+| 11 | Frontend: cadastros, estoque e configurações | ✅ |
+| 11.5 | Integração com ERPs: importação por planilha (qualquer ERP) e conector do 1º ERP (`IConectorErp` + adaptador por ERP) | |
 | 12 | Testes de integração (Testcontainers) e correções | |
 | 13 | Documentação final, Dockerfiles, CI | |

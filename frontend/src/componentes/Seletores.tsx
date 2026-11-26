@@ -1,19 +1,10 @@
 import { Autocomplete, TextField } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { catalogo } from '../api/endpoints'
 import type { ClienteResumo, ProdutoResumo } from '../api/tipos'
 import { dinheiro } from '../util/formato'
-
-/** Espera a pessoa parar de digitar (300 ms) antes de buscar: evita uma requisição por tecla. */
-function useValorAtrasado(valor: string, atraso = 300) {
-  const [atrasado, setAtrasado] = useState(valor)
-  useEffect(() => {
-    const temporizador = setTimeout(() => setAtrasado(valor), atraso)
-    return () => clearTimeout(temporizador)
-  }, [valor, atraso])
-  return atrasado
-}
+import { useValorAtrasado } from '../util/useValorAtrasado'
 
 export function SeletorProduto({
   valor,

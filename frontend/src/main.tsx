@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router'
 import { ErroApi } from './api/cliente'
 import App from './App'
 import { AuthProvider } from './auth/AuthContexto'
+import { AvisosProvider } from './componentes/avisos/AvisosProvider'
 import { tema } from './tema'
 
 // TanStack Query: guarda as respostas da API em "cache" e controla carregando/erro em cada tela.
@@ -27,7 +28,9 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={clienteQuery}>
         <BrowserRouter>
           <AuthProvider>
-            <App />
+            <AvisosProvider>
+              <App />
+            </AvisosProvider>
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>

@@ -193,3 +193,126 @@ export interface MensagemWhatsApp {
   link: string
   telefoneCliente: string | null
 }
+
+// ---------------------------------------------------------------- Fase 11: cadastros, estoque e configurações
+
+export type TipoPessoa = 'Fisica' | 'Juridica'
+export type SegmentoEmpresa = string
+
+export interface Endereco {
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
+  cep: string | null
+}
+
+export interface Categoria {
+  id: string
+  nome: string
+  descricao: string | null
+  categoriaPaiId: string | null
+  categoriaPaiNome: string | null
+}
+export interface CategoriaRequisicao {
+  nome: string
+  descricao: string | null
+  categoriaPaiId: string | null
+}
+
+export interface Marca {
+  id: string
+  nome: string
+  nivelReconhecimento: number
+}
+export interface MarcaRequisicao {
+  nome: string
+  nivelReconhecimento: number
+}
+
+export interface ProdutoRequisicao {
+  codigo: string
+  nome: string
+  descricao: string | null
+  unidadeMedida: string
+  categoriaId: string
+  marcaId: string | null
+  precoVenda: number | null
+  grupoEquivalencia: string | null
+}
+export interface ProdutoDetalhe extends ProdutoResumo {
+  descricao: string | null
+}
+
+export interface Cliente {
+  id: string
+  nome: string
+  tipoPessoa: TipoPessoa
+  documento: string | null
+  telefone: string | null
+  email: string | null
+  endereco: Endereco | null
+  observacoes: string | null
+  ativo: boolean
+}
+export type ClienteRequisicao = Omit<Cliente, 'id' | 'ativo'>
+
+export interface Fornecedor {
+  id: string
+  razaoSocial: string
+  nomeFantasia: string | null
+  cnpj: string
+  contato: string | null
+  telefone: string | null
+  email: string | null
+  endereco: Endereco | null
+  avaliacao: number | null
+  ativo: boolean
+}
+export type FornecedorRequisicao = Omit<Fornecedor, 'id' | 'ativo'>
+
+export interface EstoqueResumo {
+  produtoId: string
+  produtoCodigo: string
+  produtoNome: string
+  unidadeMedida: string
+  quantidadeDisponivel: number
+  estoqueMinimo: number
+  abaixoDoMinimo: boolean
+  localizacao: string | null
+}
+export interface EstoqueResposta extends EstoqueResumo {
+  controlado: boolean
+}
+export type TipoMovimentacao = 'Entrada' | 'Saida' | 'Ajuste'
+export interface Movimentacao {
+  id: string
+  tipo: TipoMovimentacao
+  quantidade: number
+  saldoAnterior: number
+  saldoPosterior: number
+  motivo: string | null
+  usuarioId: string
+  orcamentoId: string | null
+  criadoEm: string
+}
+
+export interface ConfiguracoesEmpresa {
+  empresaId: string
+  nome: string
+  razaoSocial: string
+  cnpj: string
+  segmento: SegmentoEmpresa
+  modoOrcamentoPadrao: ModoOrcamento
+  telefone: string | null
+  email: string | null
+  endereco: Endereco | null
+}
+export interface ConfiguracoesEmpresaRequisicao {
+  modoOrcamentoPadrao: ModoOrcamento
+  telefone: string | null
+  email: string | null
+  endereco: Endereco | null
+}

@@ -10,13 +10,15 @@
 - Os comandos `dotnet` são executados dentro de `OrcaFacil\backend` (não na raiz).
 - Atenção: o disco C: ficou sem espaço na primeira restauração do NuGet. Se der erro "Espaço insuficiente", liberar espaço antes.
 
-## ▶️ ONDE PARAMOS (25/11/2026): retomar por aqui
+## ▶️ ONDE PARAMOS (26/11/2026): retomar por aqui
 
-**Fases 7 a 10 concluídas e validadas** (a Fase 10 foi testada pela própria usuária no navegador: "amei"). Build/lint/264 testes OK em 25/11; pendente só o **commit "Fase 10" + push** (conferir com `git log`).
+**Fases 7 a 11 concluídas e validadas.** A Fase 11 (telas de cadastros, estoque e configurações) foi testada pela usuária em 26/11 (roteiro de 8 passos, todos aprovados). Build OK, lint 0 avisos. Pendente só o **commit "Fase 11" + push** (conferir com `git log`).
 
-**Próximo passo: Fase 11 — telas de cadastros (produtos com preço de venda e grupo de equivalência, categorias, marcas com nível, clientes, fornecedores), estoque (entradas, saídas, inventário, abaixo do mínimo) e configurações da empresa (modo padrão, contato).** Reaproveitar `api/cliente.ts`, `Seletores.tsx`, `Paginacao.tsx`, o padrão de Snackbar de erro e o Enter para salvar. Habilitar o item "Cadastros e estoque" do menu (hoje desabilitado). Lembrar de mostrar só para Gerente/Administrador o que a API exige (ajuste de estoque, configurações).
+**Próximo passo: Fase 11.5 (integração com ERPs), começando pela importação de produtos/preços/estoque por planilha** (Excel/CSV, casando pelo `Codigo`). Alternativas, se a usuária preferir: Fase 12 (testes de integração) ou itens do backlog (vínculos de custo com fornecedor na tela de produto, trocar produto dentro de um item do orçamento, duplicar orçamento).
 
-**Notebook da usuária (Dell Inspiron 3501, i7-1165G7, 8 GB, BIOS 1.43.0):** desliga sozinho (Kernel-Power 41 com BugcheckCode 0, cada vez mais frequente: 23/09, 19/10, 18/11, 25/11 ×2), com "IOMMU detectou um erro" (HAL 15) minutos antes. Recomendado: diagnóstico da Dell (F12 → Diagnostics), SupportAssist (BIOS/chipset/vídeo/Wi-Fi), limitar WSL2 (`.wslconfig` memory=3GB processors=4), relatório de bateria. Perguntar se fez e o resultado. Commit/push frequente.
+**Integração com ERP (conversa de 25/11/2026):** ERP = fonte da verdade (produtos, preços, estoque, fiscal); OrçaFácil = listas e orçamentos. Dois sentidos: ERP → OrçaFácil (catálogo/estoque) e OrçaFácil → ERP (pedido de venda). A usuária ainda **não sabe** qual ERP os futuros clientes usam → começar por planilha. Sugerido a ela: perguntar a lojistas conhecidos qual ERP usam (Bling, Olist/Tiny, Omie são os mais citados no pequeno varejo).
+
+**Notebook da usuária (Dell Inspiron 3501, i7-1165G7, 8 GB, BIOS 1.43.0 de 12/02/2025):** desliga sozinho (Kernel-Power 41 com BugcheckCode 0: 23/09, 19/10, 18/11, 25/11 16:33 e 20:56, 26/11 09:14). Em 26/11: **diagnóstico da Dell (F12) passou, código 000**; **bateria com 82% da capacidade** (34.348 de 41.998 mWh). O relatório de bateria mostrou o **carregador caindo e voltando em 2–4 s** várias vezes (24/11 20:42, 20:52, 21:26; 25/11 22:54), e os desligamentos de 25/11 foram **no carregador** → suspeita principal: **carregador, cabo ou entrada de força (DC-in)**. Recomendado: inspecionar o cabo, encaixar bem, outra tomada, testar só na bateria; se confirmar, trocar o carregador (original Dell 65 W) ou a entrada DC-in. Perguntar o resultado. Commit/push frequente.
 
 **Como testar no Swagger agora (desde 25/11):** a usuária pediu que Claude teste sozinho. Claude usa o **navegador embutido do app** (`mcp__remote-devices__Claude_Browser__*`, site `https://localhost:7080` já liberado). Ela precisa: build/test/run no Windows; abrir o painel (Ctrl+Shift+B no app desktop) e fazer o Authorize LÁ (não no Chrome dela). Claude pega o token em `window.ui.authSelectors.authorized()` e chama a API com `fetch` via `javascript_tool`. Nunca digitar a senha dela.
 
@@ -59,10 +61,8 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 8 | Estoque e disponibilidade no orçamento | ✅ **Concluída (25/11/2026)**: 246 testes OK; sem migration; testada por Claude no navegador embutido: entradas/saídas/ajuste/mínimo/histórico, 422 sem controle e saldo insuficiente, comparativo preferindo quem tem estoque (Econômica = Foroni), finalização bloqueada sem saldo e baixa de 2 ligada ao ORC-2026-000004 |
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ **Concluída (25/11/2026)**: 262 testes OK (263 após ajuste); migration `Fase9ContatoEmpresa` (só colunas anuláveis); testada por Claude no navegador: contato da loja (400 com e-mail inválido), PDF 200 (83 KB, todas as opções sem escolha), WhatsApp só com a opção escolhida, 422 com item sem preço, 404, link wa.me com o telefone do cliente |
 | 10 | Frontend React + TypeScript (base + fluxo principal) | ✅ **Concluída (25/11/2026)**: login com renovação automática, nova lista, revisão, gerar, comparar, preços, PDF, WhatsApp, situação; testado pela usuária |
-| 11 | Telas de cadastros, estoque e configurações | ⏭️ Próxima |
-| 8 | Estoque (endpoints) | Pendente |
-| 9 | Geração de PDF (QuestPDF) | Pendente |
-| 10–11 | Frontend React + TS + MUI e integração | Pendente |
+| 11 | Telas de cadastros, estoque e configurações | ✅ **Concluída (26/11/2026)**: produtos, categorias, marcas, clientes, fornecedores, estoque (entrada/saída/inventário/mínimo/histórico) e configurações; build OK, lint 0 avisos; testada pela usuária (8 passos aprovados) |
+| 11.5 | **Integração com ERPs** (decidida em 25/11/2026) | ⏭️ Próxima. Planejada: (1) importar produtos/preços/estoque por planilha Excel/CSV casando pelo `Codigo` (SKU), serve para qualquer ERP; (2) conector do 1º ERP de cliente real (provável Bling: API v3 REST + OAuth 2.0 com app registrado, callbacks de estoque) via interface `IConectorErp` + adaptador por ERP; orçamento aprovado → pedido de venda no ERP; credenciais por empresa, criptografadas |
 | 12 | Testes de integração (Testcontainers) e correções | Pendente |
 | 13 | Documentação final, Dockerfiles, CI | Pendente |
 
@@ -142,6 +142,15 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 7. Testes de domínio e de modelo (o filtro existe; os índices únicos são compostos com EmpresaId).
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
+
+## ✅ Fase 11: o que foi implementado (26/11/2026)
+
+- **Componentes reutilizáveis (`src/componentes/cadastro`):** `TabelaCadastro<T>` (lista genérica com busca, paginação, "mostrar inativos", filtros extras, `keepPreviousData`), `DialogoFormulario` (é um `<form>`: **Enter salva**), `BotaoComConfirmacao` ("tem certeza?"), `CamposEndereco`.
+- **Avisos (`src/componentes/avisos`):** `AvisosProvider` + `useAvisos()` com `sucesso`/`erro` (Snackbar), contexto em `contexto.ts` (regra do Fast Refresh).
+- **Utilitários:** `util/formulario.ts` (`paraNumero` aceita vírgula, `numeroParaTexto`, `textoOuNulo`, endereço ↔ formulário); `util/useValorAtrasado.ts` (tirado de `Seletores.tsx`); `auth/usePermissoes.ts` (`ehGerente`, `ehAdministrador`).
+- **Telas:** `cadastros/` Marcas (nível 1–5 em estrelas), Categorias (categoria-mãe), Produtos (busca o detalhe ao editar; preço de venda; grupo de equivalência; desativar/reativar), Clientes, Fornecedores (avaliação em meia estrela); `Estoque.tsx` (saldos, "só abaixo do mínimo", entrada/saída/inventário/configurar, histórico, "Dar entrada em produto"); `Configuracoes.tsx` (só leitura para quem não é administrador). Menu agrupado: Atendimento / Cadastros / Loja.
+- **Lint `set-state-in-effect` (26/11):** `Configuracoes` copiava os dados da API para o estado num `useEffect` (2 renderizações). Corrigido dividindo em `Configuracoes` (busca) + `FormularioConfiguracoes` (nasce preenchido pelo valor inicial do `useState`). Usar esse padrão em formulários de edição.
+- **Ícones MUI 9:** `AddCircleOutline`/`RemoveCircleOutline` → `...OutlineOutlined`.
 
 ## ✅ Fase 10: o que foi implementado (25/11/2026)
 
@@ -236,6 +245,8 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 - Testes do middleware.
 
 ## Histórico de sessões
+
+- **26/11/2026 — Sessão 9:** Fase 11 escrita. O notebook desligou às 09:14 durante o envio dos arquivos (nada gravado pela metade; reenviado e conferido). Diagnóstico Dell OK (000); relatório de bateria aponta carregador/entrada de força. Build OK de primeira; 1 aviso de lint (`set-state-in-effect`) corrigido. Usuária testou as telas: tudo aprovado.
 
 - **25/11/2026 — Sessão 8 (noite):** notebook desligou sozinho (2ª vez no dia); nada perdido (commit da Fase 9 já estava no GitHub). Diagnóstico pelos logs do Windows (ver ONDE PARAMOS). Node.js instalado via winget. Fase 10 escrita e testada pela usuária; ajustes de usabilidade a partir do feedback dela.
 - **25/11/2026 — Sessão 8 (fim):** Fase 9 escrita e validada no navegador embutido. Aviso NU1902/NU1903 (vulnerabilidade transitiva do PDFsharp) explicado e corrigido. Durante o teste, Claude achou 2 detalhes no texto do WhatsApp (\r\n do Windows e marca repetida) e corrigiu (+1 teste).

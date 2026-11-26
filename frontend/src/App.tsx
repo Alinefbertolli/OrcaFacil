@@ -1,6 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { RotaProtegida } from './auth/RotaProtegida'
 import { Layout } from './componentes/Layout'
+import { Categorias } from './paginas/cadastros/Categorias'
+import { Clientes } from './paginas/cadastros/Clientes'
+import { Fornecedores } from './paginas/cadastros/Fornecedores'
+import { Marcas } from './paginas/cadastros/Marcas'
+import { Produtos } from './paginas/cadastros/Produtos'
+import { Configuracoes } from './paginas/Configuracoes'
+import { Estoque } from './paginas/Estoque'
 import { Listas } from './paginas/Listas'
 import { Login } from './paginas/Login'
 import { NovaLista } from './paginas/NovaLista'
@@ -23,6 +30,13 @@ export default function App() {
           <Route path="/listas/:id" element={<RevisaoLista />} />
           <Route path="/orcamentos" element={<Orcamentos />} />
           <Route path="/orcamentos/:id" element={<OrcamentoDetalhe />} />
+          <Route path="/produtos" element={<Produtos />} />
+          <Route path="/categorias" element={<Categorias />} />
+          <Route path="/marcas" element={<Marcas />} />
+          <Route path="/clientes" element={<Clientes />} />
+          <Route path="/fornecedores" element={<Fornecedores />} />
+          <Route path="/estoque" element={<Estoque />} />
+          <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>
       </Route>
 

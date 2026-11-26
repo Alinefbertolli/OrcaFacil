@@ -155,5 +155,6 @@ export const http = {
 export function mensagemDeErro(erro: unknown): string {
   if (erro instanceof ErroApi) return erro.message
   if (erro instanceof TypeError) return 'Não foi possível falar com o servidor. A API está ligada?'
+  if (erro instanceof Error && erro.message) return erro.message // erros criados pelas próprias telas (ex.: "Escolha o produto.")
   return 'Ocorreu um erro inesperado.'
 }
