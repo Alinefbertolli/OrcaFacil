@@ -12,9 +12,9 @@
 
 ## ▶️ ONDE PARAMOS (26/11/2026): retomar por aqui
 
-**Fases 7 a 11 concluídas e validadas.** A Fase 11 (telas de cadastros, estoque e configurações) foi testada pela usuária em 26/11 (roteiro de 8 passos, todos aprovados). Build OK, lint 0 avisos. Pendente só o **commit "Fase 11" + push** (conferir com `git log`).
+**Fases 7 a 11 concluídas; Fase 11.5 parte 1 (importação do catálogo por planilha) concluída e validada no navegador embutido em 26/11** (Claude testou: prévia, nada gravado antes de confirmar, importação, reimportação sem mudanças, histórico de estoque, download do modelo). Commit "Fase 11.5 (parte 1)". ⚠️ Conferir se a usuária rodou `dotnet test` (esperado ~301 testes) e `npm run lint` depois deste commit; se algo falhar, corrigir primeiro.
 
-**Próximo passo: Fase 11.5 (integração com ERPs), começando pela importação de produtos/preços/estoque por planilha** (Excel/CSV, casando pelo `Codigo`). Alternativas, se a usuária preferir: Fase 12 (testes de integração) ou itens do backlog (vínculos de custo com fornecedor na tela de produto, trocar produto dentro de um item do orçamento, duplicar orçamento).
+**Próximo passo: Fase 11.5 parte 2 = conector do 1º ERP de cliente real** (precisa saber qual ERP; perguntar se ela já conversou com lojistas). Sem ERP definido, alternativas: Fase 12 (testes de integração e relatórios) ou backlog (vínculos de custo com fornecedor na tela de produto, trocar produto dentro de um item do orçamento, duplicar orçamento).
 
 **Integração com ERP (conversa de 25/11/2026):** ERP = fonte da verdade (produtos, preços, estoque, fiscal); OrçaFácil = listas e orçamentos. Dois sentidos: ERP → OrçaFácil (catálogo/estoque) e OrçaFácil → ERP (pedido de venda). A usuária ainda **não sabe** qual ERP os futuros clientes usam → começar por planilha. Sugerido a ela: perguntar a lojistas conhecidos qual ERP usam (Bling, Olist/Tiny, Omie são os mais citados no pequeno varejo).
 
@@ -62,7 +62,7 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ **Concluída (25/11/2026)**: 262 testes OK (263 após ajuste); migration `Fase9ContatoEmpresa` (só colunas anuláveis); testada por Claude no navegador: contato da loja (400 com e-mail inválido), PDF 200 (83 KB, todas as opções sem escolha), WhatsApp só com a opção escolhida, 422 com item sem preço, 404, link wa.me com o telefone do cliente |
 | 10 | Frontend React + TypeScript (base + fluxo principal) | ✅ **Concluída (25/11/2026)**: login com renovação automática, nova lista, revisão, gerar, comparar, preços, PDF, WhatsApp, situação; testado pela usuária |
 | 11 | Telas de cadastros, estoque e configurações | ✅ **Concluída (26/11/2026)**: produtos, categorias, marcas, clientes, fornecedores, estoque (entrada/saída/inventário/mínimo/histórico) e configurações; build OK, lint 0 avisos; testada pela usuária (8 passos aprovados) |
-| 11.5 | **Integração com ERPs** (decidida em 25/11/2026) | ⏭️ Próxima. Planejada: (1) importar produtos/preços/estoque por planilha Excel/CSV casando pelo `Codigo` (SKU), serve para qualquer ERP; (2) conector do 1º ERP de cliente real (provável Bling: API v3 REST + OAuth 2.0 com app registrado, callbacks de estoque) via interface `IConectorErp` + adaptador por ERP; orçamento aprovado → pedido de venda no ERP; credenciais por empresa, criptografadas |
+| 11.5 | **Integração com ERPs** (decidida em 25/11/2026) | 🟡 **Parte 1 concluída (26/11/2026): importação por planilha** (ver seção abaixo). Parte 2 pendente. Planejada: (1) importar produtos/preços/estoque por planilha Excel/CSV casando pelo `Codigo` (SKU), serve para qualquer ERP; (2) conector do 1º ERP de cliente real (provável Bling: API v3 REST + OAuth 2.0 com app registrado, callbacks de estoque) via interface `IConectorErp` + adaptador por ERP; orçamento aprovado → pedido de venda no ERP; credenciais por empresa, criptografadas |
 | 12 | Testes de integração (Testcontainers) e correções | Pendente |
 | 13 | Documentação final, Dockerfiles, CI | Pendente |
 
@@ -142,6 +142,17 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 7. Testes de domínio e de modelo (o filtro existe; os índices únicos são compostos com EmpresaId).
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
+
+## ✅ Fase 11.5 (parte 1): importação do catálogo por planilha (26/11/2026)
+
+- **Regras (decididas com a usuária):** casa pelo `Codigo` (sem diferenciar maiúsculas); código novo = produto novo (precisa de Nome; unidade padrão UN; sem categoria → "Sem categoria"); categoria e marca inexistentes são criadas (marca nível 3); produtos fora da planilha ficam como estão; coluna Estoque = saldo atual via `Estoque.AjustarSaldo` (motivo "Importação de planilha (arquivo)"); **célula vazia = não mexer**; produto inativo presente na planilha é reativado; linha com erro é pulada (as outras seguem) e nada dela é criado (nem marca/categoria).
+- **Dois passos:** `POST /api/v1/produtos/importacao?simular=true` (padrão; prepara tudo e NÃO chama SaveChanges) e `simular=false` (grava, um SaveChanges = uma transação). Gerente. `GET /produtos/importacao/modelo` baixa o .xlsx modelo (aba Produtos + aba Instruções).
+- **Application/Cadastros/PlanilhaCatalogo.cs:** `IPlanilhasCatalogo` (Ler/GerarModelo), `InterpretadorPlanilhaCatalogo` (puro): acha o cabeçalho nas 10 primeiras linhas, apelidos de coluna comparando o título INTEIRO normalizado (sem acento) — "Preço de custo" não vira preço de venda; números BR ("R$ 1.234,56"; "1.500" = 1500; "0.500" = 0,5); limite 5000 linhas; erros por linha (sem código, repetido, número inválido/negativo, tamanho).
+- **ServicoImportacaoCatalogo:** carrega produtos/categorias/marcas/estoques de uma vez (poucas consultas); histórico de preço (`OrigemPreco.PrecoVenda`) a cada mudança; detalhes legíveis por linha ("preço R$ 12,00 → R$ 13,50"). Sem migration.
+- **Infrastructure/Importacao/PlanilhasCatalogo.cs:** ClosedXML (só células com conteúdo: `XLCellsUsedOptions.Contents`; números saem como "1234,5"); CSV próprio (separador ; , ou tab detectado pela 1ª linha, aspas, UTF-8 estrito com fallback Latin-1 para CSV "ANSI" do Excel).
+- **Frontend:** `paginas/ImportarProdutos.tsx` (menu Cadastros → Importar planilha): escolher arquivo → Analisar → prévia com contadores e filtro (mudanças/erros/todas, até 300 linhas na tela) → "Importar N produto(s)". `util/baixarArquivo.ts` (extraído do `OrcamentoDetalhe`).
+- **Exemplo para testes:** `docs/exemplos/produtos-exemplo.csv`.
+- **Testes:** `InterpretadorPlanilhaCatalogoTests`, `ServicoImportacaoCatalogoTests`, `Infrastructure/PlanilhasCatalogoTests` (+37).
 
 ## ✅ Fase 11: o que foi implementado (26/11/2026)
 
@@ -246,6 +257,7 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 
 ## Histórico de sessões
 
+- **26/11/2026 — Sessão 9 (tarde):** Fase 11 commitada. Fase 11.5 parte 1 (importação por planilha) escrita; regras escolhidas pela usuária (todas as recomendadas). Claude testou no navegador embutido (arquivo injetado via DataTransfer no input): tudo conforme esperado; a marca BIC só existia na linha com erro e corretamente não foi criada.
 - **26/11/2026 — Sessão 9:** Fase 11 escrita. O notebook desligou às 09:14 durante o envio dos arquivos (nada gravado pela metade; reenviado e conferido). Diagnóstico Dell OK (000); relatório de bateria aponta carregador/entrada de força. Build OK de primeira; 1 aviso de lint (`set-state-in-effect`) corrigido. Usuária testou as telas: tudo aprovado.
 
 - **25/11/2026 — Sessão 8 (noite):** notebook desligou sozinho (2ª vez no dia); nada perdido (commit da Fase 9 já estava no GitHub). Diagnóstico pelos logs do Windows (ver ONDE PARAMOS). Node.js instalado via winget. Fase 10 escrita e testada pela usuária; ajustes de usabilidade a partir do feedback dela.

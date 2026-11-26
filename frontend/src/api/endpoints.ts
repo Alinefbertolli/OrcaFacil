@@ -28,6 +28,7 @@ import type {
   Pagina,
   ProdutoResumo,
   RespostaAutenticacao,
+  ResultadoImportacaoCatalogo,
   StatusOrcamento,
   UsuarioLogado,
 } from './tipos'
@@ -136,6 +137,13 @@ export const produtos = {
   atualizar: (id: string, r: ProdutoRequisicao) => http.put<ProdutoDetalhe>(`/produtos/${id}`, r),
   desativar: (id: string) => http.delete(`/produtos/${id}`),
   reativar: (id: string) => http.post<ProdutoDetalhe>(`/produtos/${id}/reativar`),
+  /** simular = true: só a prévia, nada é gravado. */
+  importar: (arquivo: File, simular: boolean) => {
+    const formulario = new FormData()
+    formulario.append('arquivo', arquivo)
+    return http.post<ResultadoImportacaoCatalogo>(`/produtos/importacao?simular=${simular}`, formulario)
+  },
+  baixarModelo: () => http.arquivo('/produtos/importacao/modelo'),
 }
 
 export const clientes = {

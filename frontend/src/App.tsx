@@ -8,6 +8,7 @@ import { Marcas } from './paginas/cadastros/Marcas'
 import { Produtos } from './paginas/cadastros/Produtos'
 import { Configuracoes } from './paginas/Configuracoes'
 import { Estoque } from './paginas/Estoque'
+import { ImportarProdutos } from './paginas/ImportarProdutos'
 import { Listas } from './paginas/Listas'
 import { Login } from './paginas/Login'
 import { NovaLista } from './paginas/NovaLista'
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/orcamentos" element={<Orcamentos />} />
           <Route path="/orcamentos/:id" element={<OrcamentoDetalhe />} />
           <Route path="/produtos" element={<Produtos />} />
+          <Route path="/produtos/importar" element={<ImportarProdutos />} />
           <Route path="/categorias" element={<Categorias />} />
           <Route path="/marcas" element={<Marcas />} />
           <Route path="/clientes" element={<Clientes />} />

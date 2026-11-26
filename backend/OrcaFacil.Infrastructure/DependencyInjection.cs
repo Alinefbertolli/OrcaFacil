@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrcaFacil.Application.Abstracoes;
+using OrcaFacil.Application.Cadastros;
 using OrcaFacil.Application.Importacao;
 using OrcaFacil.Application.Orcamentos;
 using OrcaFacil.Application.Estoques;
@@ -54,6 +55,7 @@ public static class DependencyInjection
         services.AddSingleton<IServicoOcr, ServicoOcrTesseract>();
         services.AddScoped<IArmazenamentoArquivos, ArmazenamentoLocal>();
         services.AddScoped<IBuscaProdutosSimilares, BuscaProdutosSimilares>();
+        services.AddSingleton<IPlanilhasCatalogo, PlanilhasCatalogo>(); // Fase 11.5: importação do catálogo
 
         // Motor de orçamentação
         services.AddScoped<IRepositorioOrcamentos, RepositorioOrcamentos>();

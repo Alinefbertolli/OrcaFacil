@@ -196,7 +196,7 @@ Exclusões: `Cascade` apenas em composições (itens de lista, opções/itens de
 | Autenticação | `POST /auth/registrar` (cria Empresa + administrador) · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `POST /auth/esqueci-senha` · `POST /auth/redefinir-senha` |
 | Usuários | `GET /usuarios/me` · `PUT /usuarios/me` · `PUT /usuarios/me/senha` · `GET/POST/PUT /usuarios` (Admin) |
 | Dashboard | `GET /dashboard/indicadores` · `GET /dashboard/desempenho-mensal?meses=12` |
-| Produtos | `GET /produtos?busca=&categoriaId=&pagina=` · `GET /produtos/{id}` · `POST` · `PUT /{id}` · `DELETE /{id}` · `GET /produtos/{id}/historico-precos` · `PUT /produtos/{id}/fornecedores/{fornecedorId}` |
+| Produtos | `GET /produtos?busca=&categoriaId=&pagina=` · `GET /produtos/{id}` · `POST` · `PUT /{id}` · `DELETE /{id}` · `GET /produtos/{id}/historico-precos` · `PUT /produtos/{id}/fornecedores/{fornecedorId}` · `POST /produtos/importacao?simular=` (planilha .xlsx/.csv do ERP) · `GET /produtos/importacao/modelo` |
 | Categorias / Marcas | CRUD em `/categorias` e `/marcas` |
 | Fornecedores | CRUD em `/fornecedores` · `GET /fornecedores/{id}/produtos` · `GET /fornecedores/{id}/historico-precos` · `PUT /fornecedores/{id}/avaliacao` |
 | Clientes | CRUD em `/clientes` · `GET /clientes/{id}/orcamentos` |
@@ -314,6 +314,6 @@ Hash PBKDF2 · JWT com chave de no mínimo 256 bits lida de variável de ambient
 | 9 | PDF do orçamento e texto para WhatsApp | ✅ |
 | 10 | Frontend: base, login e fluxo principal | ✅ |
 | 11 | Frontend: cadastros, estoque e configurações | ✅ |
-| 11.5 | Integração com ERPs: importação por planilha (qualquer ERP) e conector do 1º ERP (`IConectorErp` + adaptador por ERP) | |
+| 11.5 | Integração com ERPs: importação por planilha (qualquer ERP) e conector do 1º ERP (`IConectorErp` + adaptador por ERP) | 🟡 planilha ✅ / conector pendente |
 | 12 | Testes de integração (Testcontainers) e correções | |
 | 13 | Documentação final, Dockerfiles, CI | |

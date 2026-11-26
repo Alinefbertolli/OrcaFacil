@@ -316,3 +316,31 @@ export interface ConfiguracoesEmpresaRequisicao {
   email: string | null
   endereco: Endereco | null
 }
+
+// ---------------------------------------------------------------- Importação de produtos por planilha (Fase 11.5)
+
+export type SituacaoLinhaImportacao = 'Criado' | 'Atualizado' | 'SemAlteracao' | 'Erro'
+
+export interface LinhaImportacaoCatalogo {
+  linha: number
+  codigo: string | null
+  nome: string | null
+  situacao: SituacaoLinhaImportacao
+  detalhes: string[]
+}
+
+export interface ResultadoImportacaoCatalogo {
+  /** true = só a prévia (nada foi gravado). */
+  simulacao: boolean
+  nomeArquivo: string
+  colunasReconhecidas: string[]
+  totalLinhas: number
+  criados: number
+  atualizados: number
+  semAlteracao: number
+  comErro: number
+  estoquesAjustados: number
+  categoriasCriadas: string[]
+  marcasCriadas: string[]
+  linhas: LinhaImportacaoCatalogo[]
+}

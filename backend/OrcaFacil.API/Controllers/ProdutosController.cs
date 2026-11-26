@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OrcaFacil.API.Configuracao;
 using OrcaFacil.Application.Cadastros;
 using OrcaFacil.Application.Comum;
+using OrcaFacil.Application.Importacao;
 
 namespace OrcaFacil.API.Controllers;
 
@@ -10,8 +11,11 @@ namespace OrcaFacil.API.Controllers;
 [ApiController]
 [Route("api/v1/produtos")]
 [Produces("application/json")]
-public class ProdutosController(ServicoProdutos servico) : ControllerBase
+public class ProdutosController(ServicoProdutos servico, ServicoImportacaoCatalogo importacao) : ControllerBase
 {
+    private const long LimiteRequisicaoBytes = 12 * 1024 * 1024; // 10 MB do arquivo + folga do formulário
+    private const string TipoXlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
     /// <summary>Lista os produtos ativos (busca por nome ou código, filtros por categoria e marca).</summary>
     /// <param name="busca">Parte do nome ou do código.</param>
     /// <param name="categoriaId">Só produtos desta categoria.</param>
@@ -104,4 +108,38 @@ public class ProdutosController(ServicoProdutos servico) : ControllerBase
     public async Task<ActionResult<PaginaResultado<HistoricoPrecoResposta>>> HistoricoPrecos(Guid id,
         [FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20, CancellationToken ct = default) =>
         Ok(await servico.ListarHistoricoPrecosAsync(id, new ParametrosPaginacao(pagina, tamanhoPagina), ct));
+
+    /// <summary>[Gerente] Importa produtos, preços de venda e estoque de uma planilha (.xlsx ou .csv) do ERP.</summary>
+    /// <remarks>
+    /// O produto é encontrado pelo Código. Código novo = produto novo; categoria e marca novas são criadas;
+    /// célula vazia = não mexer; a coluna de estoque vira o saldo atual (ajuste com histórico).
+    /// Por segurança, o padrão é <c>simular=true</c>: mostra o que vai acontecer SEM gravar nada.
+    /// Depois de conferir, envie o mesmo arquivo com <c>simular=false</c>.
+    /// </remarks>
+    /// <param name="arquivo">Planilha .xlsx ou .csv (máximo 10 MB, até 5000 produtos).</param>
+    /// <param name="simular">true (padrão) = só a prévia; false = grava.</param>
+    /// <param name="ct">Cancelamento da requisição.</param>
+    /// <response code="200">Resultado linha a linha (criado, atualizado, sem alteração ou erro).</response>
+    /// <response code="400">Arquivo vazio, grande demais, de tipo errado ou sem o cabeçalho esperado.</response>
+    /// <response code="422">Não foi possível abrir a planilha (corrompida ou protegida por senha).</response>
+    [HttpPost("importacao")]
+    [Authorize(Policy = PoliticasApi.Gerente)]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(LimiteRequisicaoBytes)]
+    [ProducesResponseType<ResultadoImportacaoCatalogo>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<ResultadoImportacaoCatalogo>> Importar(IFormFile arquivo, [FromQuery] bool simular = true,
+        CancellationToken ct = default)
+    {
+        await using var conteudo = arquivo.OpenReadStream();
+        return Ok(await importacao.ImportarAsync(new ArquivoEnviado(arquivo.FileName, arquivo.Length, conteudo), simular, ct));
+    }
+
+    /// <summary>Baixa a planilha modelo (.xlsx) com as colunas que a importação entende.</summary>
+    [HttpGet("importacao/modelo")]
+    [Produces(TipoXlsx)]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, TipoXlsx)]
+    public IActionResult BaixarModelo() =>
+        File(importacao.GerarModelo(), TipoXlsx, "modelo-importacao-produtos.xlsx");
 }

@@ -8,6 +8,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import PostAddIcon from '@mui/icons-material/PostAdd'
 import SellIcon from '@mui/icons-material/Sell'
 import SettingsIcon from '@mui/icons-material/Settings'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 import WarehouseIcon from '@mui/icons-material/Warehouse'
 import {
   AppBar,
@@ -49,6 +50,7 @@ const grupos: { titulo: string; itens: ItemMenu[] }[] = [
     titulo: 'Cadastros',
     itens: [
       { para: '/produtos', texto: 'Produtos', icone: <InventoryIcon /> },
+      { para: '/produtos/importar', texto: 'Importar planilha', icone: <UploadFileIcon /> },
       { para: '/categorias', texto: 'Categorias', icone: <CategoryIcon /> },
       { para: '/marcas', texto: 'Marcas', icone: <SellIcon /> },
       { para: '/clientes', texto: 'Clientes', icone: <PeopleIcon /> },

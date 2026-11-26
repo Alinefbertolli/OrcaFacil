@@ -771,6 +771,27 @@ O lint avisou: "chamar setState dentro de um efeito causa renderizações em cas
 
 A correção foi dividir em dois componentes: um **busca** os dados e o outro só aparece **quando os dados já chegaram**, nascendo preenchido (`useState(dados.telefone)`). Regra prática: **`useEffect` serve para conversar com coisas de fora do React** (timer, conexão, API do navegador), e não para copiar um estado para outro.
 
+## 4K. Fase 11.5: importar o catálogo de uma planilha do ERP
+
+### 4K.1 Por que começar por planilha
+
+Cada ERP (Bling, Omie, Tiny...) tem sua própria API, e ainda não sabemos qual os clientes usam. Mas **quase todo ERP exporta Excel ou CSV**. Começar pela planilha resolve o problema para todos de uma vez, sem depender de ninguém. Isso é uma decisão de produto: entregar valor cedo com a solução mais simples que funciona.
+
+### 4K.2 Simular antes de gravar
+
+Uma importação mexe em centenas de produtos de uma vez. Um erro ali estraga o catálogo inteiro. Por isso o mesmo endpoint tem `simular=true` (o padrão): o código faz **todo** o trabalho, mas não chama o `SaveChanges`. Como o `DbContext` vive só durante a requisição, tudo o que foi preparado é jogado fora. A tela mostra a prévia e só depois envia de novo com `simular=false`. Padrão útil: **o caminho seguro é o padrão; o perigoso precisa ser pedido explicitamente.**
+
+### 4K.3 Código puro é fácil de testar
+
+A parte "inteligente" (achar o cabeçalho, reconhecer "SKU" como Código, ler "R$ 1.234,56") fica no `InterpretadorPlanilhaCatalogo`, que não sabe nada de banco nem de arquivo: recebe listas de textos e devolve objetos. Por isso dá para testar dezenas de casos em milissegundos. Ler o .xlsx de verdade fica na Infrastructure, atrás de uma interface (`IPlanilhasCatalogo`) — a mesma ideia da Clean Architecture das fases anteriores.
+
+### 4K.4 Detalhes que parecem bobos (mas quebram sistemas)
+
+- **Números:** "1.500" no Brasil é mil e quinhentos, mas "12.5" vindo do Excel é doze e meio. Por isso o leitor de Excel entrega os números já num formato sem ambiguidade.
+- **Acentos no CSV:** o Excel brasileiro salva CSV em "ANSI" (Windows-1252), não em UTF-8. Se lermos errado, "Régua" vira "R�gua". Tentamos UTF-8 e, se falhar, usamos Latin-1.
+- **Comparar o título inteiro:** se procurássemos "contém preço", a coluna "Preço de custo" viraria preço de venda — e a loja venderia tudo a preço de custo.
+- **Idempotência:** importar a mesma planilha duas vezes não muda nada na segunda vez. Sistemas que recebem dados de fora precisam disso.
+
 ---
 
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)

@@ -2,7 +2,7 @@
 
 Sistema inteligente de gestão e automação de orçamentos, oferecido como **SaaS multiempresa para varejistas de qualquer segmento** (papelarias, lojas de materiais, informática, utilidades...). Importa listas de produtos (PDF, imagem, Excel, Word, texto, WhatsApp), exige a revisão do usuário, cota preços em fontes rastreáveis e gera até três opções de orçamento (melhor custo-benefício, marcas reconhecidas, menor preço). Depois compara as opções, gera a proposta em PDF e integra a compra ao estoque.
 
-> **Estado atual:** Fases 1 a 11 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR), motor de orçamentação (orçamento único ou comparativo com 3 opções), estoque (disponibilidade no orçamento e baixa ao finalizar a venda), envio ao cliente (PDF e texto pronto para o WhatsApp) e o frontend em React completo (fluxo de orçamento, cadastros, estoque e configurações). Próxima: Fase 11.5 (integração com ERPs).
+> **Estado atual:** Fases 1 a 11 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR), motor de orçamentação (orçamento único ou comparativo com 3 opções), estoque (disponibilidade no orçamento e baixa ao finalizar a venda), envio ao cliente (PDF e texto pronto para o WhatsApp) e o frontend em React completo (fluxo de orçamento, cadastros, estoque e configurações), além da importação do catálogo por planilha do ERP (.xlsx/.csv, com prévia antes de gravar). Próxima: conector com o ERP do primeiro cliente.
 > Plano completo e modelo de dados: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 > Estado do desenvolvimento e como continuar: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
 

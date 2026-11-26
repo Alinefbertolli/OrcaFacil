@@ -33,6 +33,7 @@ import { mensagemDeErro } from '../api/cliente'
 import { orcamentos } from '../api/endpoints'
 import type { ColunaComparacao, ItemOrcamento, OpcaoOrcamento, Orcamento, StatusOrcamento } from '../api/tipos'
 import { EstadoDaConsulta } from '../componentes/Carregando'
+import { baixarArquivo } from '../util/baixarArquivo'
 import { data, dataHora, dinheiro, disponibilidade, quantidade, statusOrcamento } from '../util/formato'
 
 /** Os botões de situação que fazem sentido em cada momento (a API confere as regras de novo). */
@@ -84,17 +85,7 @@ export function OrcamentoDetalhe() {
   })
   const baixarPdf = useMutation({
     mutationFn: () => orcamentos.pdf(id),
-    onSuccess: ({ conteudo, nome }) => {
-      // Cria um link temporário para o arquivo e "clica" nele: o navegador baixa o PDF.
-      const url = URL.createObjectURL(conteudo)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = nome
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 10_000) // libera a memória depois que o download começou
-    },
+    onSuccess: ({ conteudo, nome }) => baixarArquivo(conteudo, nome),
     onError: (e) => setErroVisivel(mensagemDeErro(e)),
   })
 
