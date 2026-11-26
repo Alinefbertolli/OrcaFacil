@@ -1,22 +1,34 @@
 using FluentValidation;
 using OrcaFacil.Application.Abstracoes;
+using OrcaFacil.Application.Autenticacao;
+using OrcaFacil.Application.Cadastros;
 using OrcaFacil.Application.Comum;
 using OrcaFacil.Domain.Entidades;
 using OrcaFacil.Domain.Enums;
+using OrcaFacil.Domain.ObjetosDeValor;
 
 namespace OrcaFacil.Application.Empresas;
 
-public sealed record ConfiguracoesEmpresaResposta(Guid EmpresaId, string Nome, SegmentoEmpresa Segmento,
-    ModoOrcamento ModoOrcamentoPadrao);
+public sealed record ConfiguracoesEmpresaResposta(Guid EmpresaId, string Nome, string RazaoSocial, string Cnpj,
+    SegmentoEmpresa Segmento, ModoOrcamento ModoOrcamentoPadrao, string? Telefone, string? Email, Endereco? Endereco);
 
 /// <param name="ModoOrcamentoPadrao">Unico (itens exatos, ex.: loja de pijamas) ou Comparativo (ex.: papelaria).</param>
-public sealed record ConfiguracoesEmpresaRequisicao(ModoOrcamento ModoOrcamentoPadrao);
+/// <param name="Telefone">Telefone/WhatsApp da loja (aparece no PDF e no texto do WhatsApp).</param>
+/// <remarks>É um PUT: os campos de contato não enviados ficam vazios.</remarks>
+public sealed record ConfiguracoesEmpresaRequisicao(
+    ModoOrcamento ModoOrcamentoPadrao,
+    string? Telefone = null,
+    string? Email = null,
+    Endereco? Endereco = null);
 
 public sealed class ConfiguracoesEmpresaValidador : AbstractValidator<ConfiguracoesEmpresaRequisicao>
 {
     public ConfiguracoesEmpresaValidador()
     {
         RuleFor(r => r.ModoOrcamentoPadrao).IsInEnum().WithMessage("Modo inválido: use Unico ou Comparativo.");
+        RuleFor(r => r.Telefone).MaximumLength(Empresa.TamanhoMaximoTelefone);
+        RuleFor(r => r.Email!).EmailValido().When(r => !string.IsNullOrWhiteSpace(r.Email));
+        RuleFor(r => r.Endereco!).SetValidator(new EnderecoValidador()).When(r => r.Endereco is not null);
     }
 }
 
@@ -36,6 +48,7 @@ public sealed class ServicoConfiguracoesEmpresa(
         await validador.ValidateAndThrowAsync(requisicao, ct);
         var empresa = await EmpresaLogadaAsync(ct);
         empresa.DefinirModoOrcamentoPadrao(requisicao.ModoOrcamentoPadrao);
+        empresa.AtualizarContato(requisicao.Telefone, requisicao.Email, EnderecoPadronizado.Padronizar(requisicao.Endereco));
         await unidadeDeTrabalho.SalvarAlteracoesAsync(ct);
         return Mapear(empresa);
     }
@@ -48,5 +61,6 @@ public sealed class ServicoConfiguracoesEmpresa(
     }
 
     private static ConfiguracoesEmpresaResposta Mapear(Empresa empresa) =>
-        new(empresa.Id, empresa.NomeExibicao, empresa.Segmento, empresa.ModoOrcamentoPadrao);
+        new(empresa.Id, empresa.NomeExibicao, empresa.RazaoSocial, empresa.Cnpj, empresa.Segmento,
+            empresa.ModoOrcamentoPadrao, empresa.Telefone, empresa.Email, empresa.Endereco);
 }

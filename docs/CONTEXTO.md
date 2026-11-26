@@ -12,9 +12,9 @@
 
 ## ▶️ ONDE PARAMOS (25/11/2026): retomar por aqui
 
-**Fases 7 e 8 concluídas e validadas.** Falta só a usuária fazer o **commit "Fase 8" + push** (Source Control → Commit & Sync; conferir com `git log` no computador).
+**Fases 7, 8 e 9 concluídas e validadas.** Pendente com a usuária: (1) `dotnet build` + `dotnet test` (esperado **263**, após o ajuste final do texto do WhatsApp); (2) **commit "Fase 9" + push**.
 
-**Próximo passo: Fase 9, orçamento em PDF + texto pronto para o WhatsApp** (visão do produto, item 6). Lembrar: QuestPDF é gratuito só até US$ 1 mi de receita anual (avisar a usuária antes de adotar; alternativa sem licença comercial: PdfSharp/MigraDoc ou gerar HTML). Propor o plano antes de codar.
+**Próximo passo: Fase 10, frontend React + TypeScript** (Vite; telas: login, importar lista + revisão, gerar/comparar orçamento, PDF/WhatsApp, cadastros, estoque; renovação automática do token com o refresh token). Precisa de Node.js 22+ na máquina dela (verificar com `node --version`). Propor plano e escolhas (biblioteca de componentes: MUI estava no plano original) antes de codar.
 
 **Como testar no Swagger agora (desde 25/11):** a usuária pediu que Claude teste sozinho. Claude usa o **navegador embutido do app** (`mcp__remote-devices__Claude_Browser__*`, site `https://localhost:7080` já liberado). Ela precisa: build/test/run no Windows; abrir o painel (Ctrl+Shift+B no app desktop) e fazer o Authorize LÁ (não no Chrome dela). Claude pega o token em `window.ui.authSelectors.authorized()` e chama a API com `fetch` via `javascript_tool`. Nunca digitar a senha dela.
 
@@ -55,7 +55,8 @@ Estudante do 1º semestre de ADS e primeiro projeto com IA. **Explicar cada etap
 | 6 | Importação de listas (PDF, imagem/OCR, Excel, Word, texto, WhatsApp) e revisão | ✅ **Concluída (18/11/2026)**: 195 testes OK; no Swagger: WhatsApp (3 itens, caderno sugerido do catálogo), correção, sugestões, confirmação (depois 422 ao editar), Excel (2 itens), imagem com OCR (3 itens, confiança do Tesseract 88%) |
 | 7 | Motor de orçamentação (preço de venda, modo Único/Comparativo, 3 opções com produtos equivalentes) e comparação | ✅ **Concluída (25/11/2026)**: 228 testes OK; migration incremental `Fase7MotorOrcamento` (rename sem perda de dados); no Swagger: comparativo 24/40/60, comparação 0/16/36 (0/66,7/150 %), seleção, 422 com item sem preço, preço manual 31,50, envio 200, modo Único 201 |
 | 8 | Estoque e disponibilidade no orçamento | ✅ **Concluída (25/11/2026)**: 246 testes OK; sem migration; testada por Claude no navegador embutido: entradas/saídas/ajuste/mínimo/histórico, 422 sem controle e saldo insuficiente, comparativo preferindo quem tem estoque (Econômica = Foroni), finalização bloqueada sem saldo e baixa de 2 ligada ao ORC-2026-000004 |
-| 9 | PDF do orçamento e texto para WhatsApp | ⏭️ Próxima |
+| 9 | PDF do orçamento e texto para WhatsApp | ✅ **Concluída (25/11/2026)**: 262 testes OK (263 após ajuste); migration `Fase9ContatoEmpresa` (só colunas anuláveis); testada por Claude no navegador: contato da loja (400 com e-mail inválido), PDF 200 (83 KB, todas as opções sem escolha), WhatsApp só com a opção escolhida, 422 com item sem preço, 404, link wa.me com o telefone do cliente |
+| 10 | Frontend React + TypeScript | ⏭️ Próxima |
 | 8 | Estoque (endpoints) | Pendente |
 | 9 | Geração de PDF (QuestPDF) | Pendente |
 | 10–11 | Frontend React + TS + MUI e integração | Pendente |
@@ -139,6 +140,16 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 8. Nova migration (sugestão de nome: `Multiempresa`), gerada e aplicada pela usuária (lembrar de explicar o `migrations add` + `database update`).
 9. Atualizar ARQUITETURA.md (modelo de dados) e GUIA-DO-ESTUDANTE.md (explicar multi-tenancy com analogia: prédio de escritórios, cada empresa com sua chave).
 
+## ✅ Fase 9: o que foi implementado (25/11/2026)
+
+- **Decisões da usuária:** PDFsharp/MigraDoc 6.2 (licença MIT, sem limite de faturamento); item sem preço nas opções que vão ao cliente **bloqueia** (422); opções **automático** (sem escolha → todas, na ordem Econômica/Custo-benefício/Marcas; com escolha → só a escolhida; pendência em opção não escolhida não bloqueia).
+- **Domínio:** `Empresa.Telefone/Email/Endereco` + `AtualizarContato` (e-mail em minúsculas). Migration `Fase9ContatoEmpresa`.
+- **Application:** `DocumentosOrcamento.cs` — `DocumentoOrcamento` (conteúdo único para PDF e WhatsApp; só dados que o cliente pode ver), `FormatoBr` (R$ com espaço comum, quantidades, datas, CNPJ, endereço), `TextoWhatsApp` (negrito do WhatsApp, `\n`, não repete a marca já presente no nome; link `wa.me` com número 55+DDD quando o cliente tem telefone), `ServicoDocumentosOrcamento`, `IGeradorPdfOrcamento`. Configurações da empresa ganharam contato (PUT substitui tudo).
+- **Infrastructure/Documentos:** `GeradorPdfOrcamento` (MigraDoc: cabeçalho da loja, título, datas, cliente, tabela por opção com cabeçalho repetido, total, validade, rodapé "Página X de Y"); `ResolvedorDeFontes` (Arial → Liberation Sans → DejaVu Sans; `Pdf:PastaFontes`; registrado uma vez por processo). **Para o Docker (Fase 13): instalar `fonts-dejavu-core`.**
+- **Segurança:** o PDFsharp puxava `System.Security.Cryptography.Pkcs` 8.0.1 (GHSA-846f-f764-76mx alta e GHSA-2fmv-rv2c-59x7 moderada) → referência direta `10.0.*` no Infrastructure (corrigido na 10.0.13).
+- **API:** `GET /orcamentos/{id}/pdf` (arquivo `ORC-....pdf`) e `GET /orcamentos/{id}/whatsapp` (`texto`, `link`, `telefoneCliente`).
+- **Dados de teste criados:** contato fictício da Papelaria Exemplo; cliente "Maria Teste" (11) 98765-4321; ORC-2026-000005 (Unico, cliente Maria).
+
 ## ✅ Fase 8: o que foi implementado (25/11/2026)
 
 - **Decisões da usuária:** no Comparativo, preferir produtos que atendem a quantidade (saldo suficiente OU sem controle de estoque); se nenhum atende, regra normal + observação "Nenhum produto equivalente tem estoque suficiente". Baixa automática ao **finalizar** (Aprovado → Finalizado), no mesmo SaveChanges; se faltar saldo de qualquer item, nada é baixado e a finalização é recusada (422) com a lista do que falta.
@@ -212,6 +223,7 @@ Pontos de maior risco na Fase 2, caso algum teste falhe:
 
 ## Histórico de sessões
 
+- **25/11/2026 — Sessão 8 (fim):** Fase 9 escrita e validada no navegador embutido. Aviso NU1902/NU1903 (vulnerabilidade transitiva do PDFsharp) explicado e corrigido. Durante o teste, Claude achou 2 detalhes no texto do WhatsApp (\r\n do Windows e marca repetida) e corrigiu (+1 teste).
 - **25/11/2026 — Sessão 8 (cont.):** Fase 8 escrita (decisões: preferir estoque; baixa ao finalizar), 246 testes OK na 1ª compilação. A pedido da usuária, **Claude testou a API sozinho pelo navegador embutido** (ela fez o login no painel). Todos os cenários conforme o esperado. Dados criados: estoques CAD10-1 = 8, CAD10-2 = 48, CAD10-3 = 10 (mínimo 20, Prateleira B2); ORC-2026-000003 (Comparativo) e ORC-2026-000004 (Unico, Finalizado).
 - **25/11/2026 — Sessão 8:** validação da Fase 7 concluída no Swagger (D7–D12 e E13 conforme o esperado). 401 por token expirado guardado no navegador → Logout + Authorize. Documentação atualizada (guia 4F).
 - **23/11/2026 — Sessão 7:** Fase 7 escrita. Erros: CS0411 (`OverridePropertyName` antes da regra) e um envio de arquivo desatualizado (commit em paralelo; ver lições). Migration revisada e aplicada. Senha do Postgres trocada por uma aleatória. Git instalado, **projeto publicado no GitHub**. Validação no Swagger até o passo C6 (400 por colar o empresaId no lugar da categoria).

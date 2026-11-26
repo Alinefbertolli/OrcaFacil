@@ -218,6 +218,10 @@ namespace OrcaFacil.Infrastructure.Persistencia.Migrations
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("ModoOrcamentoPadrao")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -236,6 +240,10 @@ namespace OrcaFacil.Infrastructure.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Telefone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
 
@@ -1233,6 +1241,59 @@ namespace OrcaFacil.Infrastructure.Persistencia.Migrations
                     b.Navigation("Fornecedor");
 
                     b.Navigation("Produto");
+                });
+
+            modelBuilder.Entity("OrcaFacil.Domain.Entidades.Empresa", b =>
+                {
+                    b.OwnsOne("OrcaFacil.Domain.ObjetosDeValor.Endereco", "Endereco", b1 =>
+                        {
+                            b1.Property<Guid>("EmpresaId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Bairro")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("EnderecoBairro");
+
+                            b1.Property<string>("Cep")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("EnderecoCep");
+
+                            b1.Property<string>("Cidade")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("EnderecoCidade");
+
+                            b1.Property<string>("Complemento")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("EnderecoComplemento");
+
+                            b1.Property<string>("Logradouro")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("EnderecoLogradouro");
+
+                            b1.Property<string>("Numero")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("EnderecoNumero");
+
+                            b1.Property<string>("Uf")
+                                .HasMaxLength(2)
+                                .HasColumnType("character varying(2)")
+                                .HasColumnName("EnderecoUf");
+
+                            b1.HasKey("EmpresaId");
+
+                            b1.ToTable("Empresas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EmpresaId");
+                        });
+
+                    b.Navigation("Endereco");
                 });
 
             modelBuilder.Entity("OrcaFacil.Domain.Entidades.Estoque", b =>

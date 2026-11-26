@@ -14,8 +14,33 @@ namespace OrcaFacil.API.Controllers;
 [ApiController]
 [Route("api/v1/orcamentos")]
 [Produces("application/json")]
-public class OrcamentosController(ServicoOrcamentos servico) : ControllerBase
+public class OrcamentosController(ServicoOrcamentos servico, ServicoDocumentosOrcamento documentos) : ControllerBase
 {
+    /// <summary>Baixa o orçamento em PDF para enviar ao cliente.</summary>
+    /// <remarks>
+    /// Antes da escolha do cliente, o PDF traz todas as opções; depois de selecionada, só a escolhida.
+    /// Não gera se houver item "sem preço" nas opções que vão para o cliente (422).
+    /// </remarks>
+    [HttpGet("{id:guid}/pdf")]
+    [Produces("application/pdf", "application/problem+json")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Pdf(Guid id, CancellationToken ct)
+    {
+        var (conteudo, nomeArquivo) = await documentos.GerarPdfAsync(id, ct);
+        return File(conteudo, "application/pdf", nomeArquivo);
+    }
+
+    /// <summary>Texto pronto para o WhatsApp e um link que abre a conversa já com a mensagem.</summary>
+    /// <remarks>Mesmas regras do PDF. Com o telefone do cliente cadastrado, o link abre a conversa com ele.</remarks>
+    [HttpGet("{id:guid}/whatsapp")]
+    [ProducesResponseType<MensagemWhatsAppResposta>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<MensagemWhatsAppResposta>> WhatsApp(Guid id, CancellationToken ct) =>
+        Ok(await documentos.GerarWhatsAppAsync(id, ct));
+
     /// <summary>Gera um orçamento a partir de uma lista importada e REVISADA.</summary>
     /// <remarks>
     /// Exemplo (comparativo com as 3 opções): { "listaImportadaId": "...", "modo": "Comparativo" }.

@@ -667,6 +667,39 @@ Nesta fase, você pediu que eu testasse sozinho. Você ligou a API e fez o login
 
 ---
 
+## 4H. Fase 9: o orçamento chega ao cliente (PDF e WhatsApp)
+
+### 4H.1 Um conteúdo, duas aparências
+
+O PDF e o texto do WhatsApp são montados a partir do **mesmo objeto**, o `DocumentoOrcamento`. Ele já vem filtrado (quais opções mostrar) e conferido (sem item sem preço). Assim:
+- o PDF e a mensagem **nunca discordam** entre si;
+- uma regra (ex.: "não mandar valor incompleto") é escrita **uma vez só**;
+- o documento só tem o que o **cliente** pode ver: nada de custo, fornecedor, estoque ou observações internas.
+
+Separar "o que mostrar" de "como mostrar" é um princípio muito usado em programação. Você vai reencontrá-lo no frontend (Fase 10).
+
+### 4H.2 Licença de software: por que PDFsharp e não QuestPDF
+
+O QuestPDF é gratuito só para empresas com faturamento abaixo de US$ 1 milhão por ano. O PDFsharp/MigraDoc tem **licença MIT**: dá para usar, modificar e vender sem pagar nada (só é preciso manter o aviso de copyright). Como você quer vender o OrçaFácil, essa escolha evita uma surpresa no futuro. Antes de adicionar uma biblioteca, **sempre confira a licença**.
+
+### 4H.3 Fontes: o detalhe que quebra PDFs no Linux
+
+Um PDF precisa dos **arquivos de fonte** para desenhar as letras. No Windows existe a Arial; num servidor Linux (Docker), não. Por isso criamos o `ResolvedorDeFontes`: ele procura a Arial e, se não achar, fontes livres equivalentes (Liberation Sans, DejaVu Sans). Na Fase 13, o Docker vai precisar do pacote `fonts-dejavu-core`.
+
+### 4H.4 Dependências transitivas e vulnerabilidades
+
+Ao adicionar o PDFsharp, o .NET avisou (NU1902/NU1903) que um pacote **que veio junto com ele** tinha falhas de segurança conhecidas. Nós não usamos esse pacote diretamente: ele é uma **dependência transitiva** ("veio de carona"). A correção foi pedir explicitamente a versão corrigida no `.csproj`; o NuGet então usa a mais nova. Lição: **aviso de segurança não se ignora**, mesmo quando o risco real é baixo.
+
+### 4H.5 Detalhes que fazem diferença para o cliente
+
+- **Dinheiro no padrão brasileiro:** `R$ 1.234,56`. Montamos o texto à mão porque o formato "moeda" do .NET coloca um espaço invisível especial depois do `R$`.
+- **Quebra de linha:** no Windows, uma "nova linha" é `\r\n`; no celular, é `\n`. Para o WhatsApp, usamos sempre `\n`.
+- **Link `wa.me`:** abre o WhatsApp já com a mensagem. O número vai no formato internacional (55 + DDD + número) e o texto é "codificado" para caber numa URL (espaço vira `%20`, `ç` vira `%C3%A7`...).
+
+Os dois primeiros detalhes foram encontrados **testando de verdade**, e não lendo o código: no teste pelo navegador apareceram o `\r\n` e a marca repetida em "Caderno Tilibra (Tilibra)".
+
+---
+
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)
 
 1. **Não aceite código que você não entende.** Pergunte "por que isso?" e "o que essa linha faz?". Entender é o seu objetivo, e o código é consequência.

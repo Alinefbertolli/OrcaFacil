@@ -8,6 +8,7 @@ using OrcaFacil.Application.Estoques;
 using OrcaFacil.Infrastructure.Importacao;
 using OrcaFacil.Infrastructure.Orcamentos;
 using OrcaFacil.Infrastructure.Estoques;
+using OrcaFacil.Infrastructure.Documentos;
 using OrcaFacil.Infrastructure.Email;
 using OrcaFacil.Infrastructure.Seguranca;
 using OrcaFacil.Infrastructure.Persistencia;
@@ -60,6 +61,9 @@ public static class DependencyInjection
 
         // Estoque
         services.AddScoped<IRepositorioEstoques, RepositorioEstoques>();
+
+        // Documentos do orçamento (PDF). Singleton: o registro das fontes é feito uma vez só.
+        services.AddSingleton<IGeradorPdfOrcamento>(_ => new GeradorPdfOrcamento(configuration["Pdf:PastaFontes"]));
 
         return services;
     }

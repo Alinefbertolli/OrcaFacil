@@ -63,6 +63,16 @@ public class ModeloBancoTests
     }
 
     [Fact]
+    public void Empresa_tem_contato_para_o_pdf()
+    {
+        var empresas = Script.Value[Script.Value.IndexOf("CREATE TABLE \"Empresas\"")..];
+        empresas = empresas[..empresas.IndexOf(");")];
+        empresas.Should().Contain("\"Telefone\" character varying(20)")
+            .And.Contain("\"Email\" character varying(200)")
+            .And.Contain("\"EnderecoCidade\" character varying(100)");
+    }
+
+    [Fact]
     public void Empresa_e_orcamento_guardam_o_modo_como_texto() =>
         Script.Value.Should().Contain("\"ModoOrcamentoPadrao\" character varying(40)")
             .And.Contain("\"Modo\" character varying(40)");

@@ -38,6 +38,13 @@ public class Empresa : EntidadeBase
     /// </summary>
     public ModoOrcamento ModoOrcamentoPadrao { get; private set; } = ModoOrcamento.Comparativo;
 
+    /// <summary>Contato da loja: aparece no cabeçalho do PDF e no texto do WhatsApp enviados ao cliente.</summary>
+    public string? Telefone { get; private set; }
+    public string? Email { get; private set; }
+    public Endereco? Endereco { get; private set; }
+
+    public const int TamanhoMaximoTelefone = 20;
+
     /// <summary>Nome para exibição: fantasia quando houver, senão a razão social.</summary>
     public string NomeExibicao => NomeFantasia ?? RazaoSocial;
 
@@ -53,6 +60,15 @@ public class Empresa : EntidadeBase
         if (!Enum.IsDefined(modo))
             throw new DomainException("Modo de orçamento inválido.");
         ModoOrcamentoPadrao = modo;
+    }
+
+    public void AtualizarContato(string? telefone, string? email, Endereco? endereco)
+    {
+        Telefone = string.IsNullOrWhiteSpace(telefone) ? null : telefone.Trim();
+        if (Telefone is { Length: > TamanhoMaximoTelefone })
+            throw new DomainException($"O telefone deve ter no máximo {TamanhoMaximoTelefone} caracteres.");
+        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+        Endereco = endereco;
     }
 
     public void Desativar() => Ativa = false;

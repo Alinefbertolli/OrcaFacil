@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<ServicoOrcamentos>();
         services.AddScoped<ServicoConfiguracoesEmpresa>();
         services.AddScoped<ServicoEstoque>();
+        services.AddScoped<ServicoDocumentosOrcamento>();
 
         return services;
     }

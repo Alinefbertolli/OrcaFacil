@@ -14,6 +14,11 @@ public class EmpresaConfiguration : IEntityTypeConfiguration<Empresa>
         builder.Property(e => e.Cnpj).HasMaxLength(14).IsFixedLength().IsRequired();
         builder.Ignore(e => e.NomeExibicao); // calculada
 
+        // Contato da loja (Fase 9: cabeçalho do PDF e texto do WhatsApp)
+        builder.Property(e => e.Telefone).HasMaxLength(Empresa.TamanhoMaximoTelefone);
+        builder.Property(e => e.Email).HasMaxLength(200);
+        builder.OwnsOne(e => e.Endereco, e => EnderecoMapeamento.Configurar(e));
+
         // Uma empresa (CNPJ) só pode ter uma conta no OrçaFácil.
         builder.HasIndex(e => e.Cnpj).IsUnique();
     }
