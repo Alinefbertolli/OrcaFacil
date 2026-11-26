@@ -7,5 +7,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="OrcaFacil.Tests/OrcaFacil.Tests.csproj" />
+    <Project Path="OrcaFacil.IntegrationTests/OrcaFacil.IntegrationTests.csproj" />
   </Folder>
 </Solution>

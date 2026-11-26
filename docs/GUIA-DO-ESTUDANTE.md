@@ -792,6 +792,35 @@ A parte "inteligente" (achar o cabeçalho, reconhecer "SKU" como Código, ler "R
 - **Comparar o título inteiro:** se procurássemos "contém preço", a coluna "Preço de custo" viraria preço de venda — e a loja venderia tudo a preço de custo.
 - **Idempotência:** importar a mesma planilha duas vezes não muda nada na segunda vez. Sistemas que recebem dados de fora precisam disso.
 
+## 4L. Fase 12: testes de integração
+
+### 4L.1 Unidade × integração
+
+- **Teste de unidade:** testa uma peça sozinha, trocando o banco por uma imitação ("fake"). É rápido (300 testes em 4 segundos) e mostra exatamente onde está o erro.
+- **Teste de integração:** liga as peças de verdade — API, EF Core, PostgreSQL — e conversa por HTTP, como o frontend. É mais lento, mas pega o que o teste de unidade não vê: um filtro do banco que não funciona, uma migration esquecida, uma rota com a permissão errada.
+
+Os dois se completam. A "pirâmide de testes" diz: muitos de unidade na base, menos de integração no meio.
+
+### 4L.2 Testcontainers: um banco descartável para cada execução
+
+Testar no banco de desenvolvimento seria perigoso (apagaria seus dados) e instável (o resultado dependeria do que já está lá). O **Testcontainers** cria um PostgreSQL novinho num contêiner Docker, o teste usa, e no fim ele é apagado. Todo mundo que rodar os testes — você, um recrutador, o GitHub Actions — terá o mesmo resultado.
+
+### 4L.3 O que vale a pena testar na integração
+
+Escolhemos os riscos mais caros de um SaaS:
+1. **Multiempresa:** uma loja ver os dados de outra seria o pior bug possível (vazamento de dados, LGPD). O teste tenta ler, alterar e excluir o produto da outra loja e espera 404.
+2. **O fluxo principal de ponta a ponta:** se ele quebrar, o produto não serve para nada.
+3. **Segurança:** sem token, senha errada, token reutilizado, força bruta (429), permissões por perfil.
+4. **Banco × código:** `HasPendingModelChanges()` avisa se alguém mudou uma entidade e esqueceu a migration.
+
+### 4L.4 Isolamento entre testes
+
+Cada teste cria a **sua própria empresa** (com CNPJ e e-mail aleatórios). Como o sistema é multiempresa, um teste não enxerga os dados do outro — então a ordem em que rodam não importa. Testes que dependem uns dos outros são uma fonte clássica de falhas "fantasmas".
+
+### 4L.5 Configuração separada para teste
+
+A fixture usa o ambiente **"Testing"**. No "Development", o .NET lê os user-secrets da máquina (com a sua senha do banco e a sua chave JWT); no "Testing", não. Assim, o teste nunca usa seus segredos nem seu banco, por engano.
+
 ---
 
 ## 5. Como trabalhar bem com um agente de IA (dicas para estudantes)

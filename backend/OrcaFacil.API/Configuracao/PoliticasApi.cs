@@ -35,9 +35,13 @@ public static class ConfiguracaoSegurancaExtensions
     /// <summary>
     /// Limite de requisições: no máximo 5 tentativas por minuto por endereço IP nos endpoints
     /// marcados com [EnableRateLimiting(PoliticasApi.LimiteAutenticacao)]. A 6ª recebe HTTP 429.
+    /// O número pode ser trocado em "Seguranca:TentativasDeAutenticacaoPorMinuto" (os testes de integração
+    /// aumentam o limite, porque fazem muitos logins seguidos do mesmo "endereço").
     /// </summary>
-    public static IServiceCollection AddLimitesDeRequisicao(this IServiceCollection services) =>
-        services.AddRateLimiter(opcoes =>
+    public static IServiceCollection AddLimitesDeRequisicao(this IServiceCollection services, IConfiguration configuration)
+    {
+        var tentativas = configuration.GetValue("Seguranca:TentativasDeAutenticacaoPorMinuto", 5);
+        return services.AddRateLimiter(opcoes =>
         {
             opcoes.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             opcoes.AddPolicy(PoliticasApi.LimiteAutenticacao, httpContext =>
@@ -45,9 +49,10 @@ public static class ConfiguracaoSegurancaExtensions
                     partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 5,
+                        PermitLimit = tentativas,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0
                     }));
         });
+    }
 }

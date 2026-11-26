@@ -38,7 +38,7 @@ try
     // Login com JWT, usuário/empresa logados (multiempresa) e permissões por perfil.
     builder.Services.AddAutenticacaoJwt(builder.Configuration);
     builder.Services.AddCorsFrontend(builder.Configuration);
-    builder.Services.AddLimitesDeRequisicao();
+    builder.Services.AddLimitesDeRequisicao(builder.Configuration);
 
     // ---------- API, health check e Swagger ----------
     builder.Services.AddControllers()

@@ -2,7 +2,7 @@
 
 Sistema inteligente de gestão e automação de orçamentos, oferecido como **SaaS multiempresa para varejistas de qualquer segmento** (papelarias, lojas de materiais, informática, utilidades...). Importa listas de produtos (PDF, imagem, Excel, Word, texto, WhatsApp), exige a revisão do usuário, cota preços em fontes rastreáveis e gera até três opções de orçamento (melhor custo-benefício, marcas reconhecidas, menor preço). Depois compara as opções, gera a proposta em PDF e integra a compra ao estoque.
 
-> **Estado atual:** Fases 1 a 11 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR), motor de orçamentação (orçamento único ou comparativo com 3 opções), estoque (disponibilidade no orçamento e baixa ao finalizar a venda), envio ao cliente (PDF e texto pronto para o WhatsApp) e o frontend em React completo (fluxo de orçamento, cadastros, estoque e configurações), além da importação do catálogo por planilha do ERP (.xlsx/.csv, com prévia antes de gravar). Próxima: conector com o ERP do primeiro cliente.
+> **Estado atual:** Fases 1 a 11 concluídas: domínio, banco, multiempresa (SaaS), API, login, cadastros, importação inteligente de listas (com OCR), motor de orçamentação (orçamento único ou comparativo com 3 opções), estoque (disponibilidade no orçamento e baixa ao finalizar a venda), envio ao cliente (PDF e texto pronto para o WhatsApp) e o frontend em React completo (fluxo de orçamento, cadastros, estoque e configurações), além da importação do catálogo por planilha do ERP (.xlsx/.csv, com prévia antes de gravar) e testes de integração com PostgreSQL real (316 testes no total). Próxima: Fase 13 (Dockerfiles, CI e documentação final).
 > Plano completo e modelo de dados: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 > Estado do desenvolvimento e como continuar: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
 
@@ -23,7 +23,8 @@ OrcaFacil/
 │   ├── OrcaFacil.Application/     Casos de uso, DTOs, validações, interfaces
 │   ├── OrcaFacil.Infrastructure/  EF Core/PostgreSQL, integrações, arquivos
 │   ├── OrcaFacil.API/             Controllers, autenticação, Swagger
-│   └── OrcaFacil.Tests/           Testes unitários e de integração
+│   ├── OrcaFacil.Tests/           Testes de unidade (rápidos, sem banco)
+│   └── OrcaFacil.IntegrationTests/ Testes de integração (API + PostgreSQL reais, via Docker)
 ├── frontend/                      (Fases 10 e 11)
 ├── docs/ARQUITETURA.md
 └── docker-compose.yml
@@ -39,13 +40,18 @@ OrcaFacil/
 
 Todos os comandos `dotnet` rodam dentro da pasta **`backend`**.
 
-### 1. Compilar e testar (não precisa de banco)
+### 1. Compilar e testar
 
 ```powershell
 cd backend
 dotnet build
-dotnet test
+dotnet test OrcaFacil.Tests              # testes de unidade: não precisam de banco nem de Docker
+dotnet test OrcaFacil.IntegrationTests   # testes de integração: precisam do Docker Desktop ligado
+dotnet test                              # todos (316 testes)
 ```
+
+Os testes de integração criam sozinhos um PostgreSQL descartável (Testcontainers) e sobem a API em memória.
+Eles **não usam** o seu banco de desenvolvimento nem os seus user-secrets.
 
 ### 2. Banco de dados
 
